@@ -1,0 +1,35 @@
+Nexus Global Enterprise — New Employee Onboarding & Security Policy 2026
+Classification: PUBLIC (Internal Distribution Only)
+HR Director: Sarah Jenkins (sjenkins@nexus.internal)
+
+==============================================================
+WELCOME TO NEXUS GLOBAL ENTERPRISE
+==============================================================
+
+1. ACCOUNT SETUP
+   Your domain account has been created in nexus.internal.
+   Username: [first initial][last name] (e.g. mvance, tahmed)
+   Temporary Password: [Name][Role]_[Year]!  — Change on first login.
+
+2. INTERNAL SYSTEMS ACCESS
+   Corporate Intranet (ERP): http://10.0.3.10:8000
+     - View your employee record, payroll, and team directory.
+   Corporate Webmail: http://10.0.1.30:8025
+     - Use your nexus.internal account for email.
+   Backup Storage: http://10.0.3.30:9000 (IT Dept only)
+
+3. NETWORK & VPN
+   All remote access must go through the SSH Bastion Host:
+     bastion.nexus.internal (10.0.1.40) on Port 22
+   Request devops-remote credentials from IT Helpdesk.
+
+4. IT HELPDESK
+   Email: it-helpdesk@nexus.internal
+   Internal Phone Ext: 8001
+   Escalation: tahmed (DevOps Lead) | erostova (Systems Arch)
+
+5. SECURITY AWARENESS
+   - Do NOT store credentials in plain text files.
+   - Report suspicious activity to soc@nexus.internal.
+   - All file shares (IT-Backups, HR-Public) are monitored.
+   - SIEM logging is active on all internal subnets.

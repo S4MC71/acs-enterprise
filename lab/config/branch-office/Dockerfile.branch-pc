@@ -1,0 +1,53 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache openssh bash curl iputils iproute2 shadow net-tools samba-client vim less
+
+RUN ssh-keygen -A && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "Banner /etc/ssh/ssh_banner" >> /etc/ssh/sshd_config
+
+RUN printf '** Nexus Global Enterprise — BRANCH OFFICE WORKSTATION **\n** Dhaka Regional Office | Authorized Personnel Only **\n' > /etc/ssh/ssh_banner
+
+# Create branch employee account (weak password for brute-force lab)
+RUN adduser -D -s /bin/bash ibrahim && \
+    echo "ibrahim:Branch@2026" | chpasswd
+
+RUN printf '%s\n' \
+    "==========================================" \
+    " NEXUS GLOBAL ENTERPRISE                  " \
+    " Dhaka Branch Office Workstation          " \
+    " Node: branch-pc-01.dhaka.nexus.internal  " \
+    " AUTHORIZED BRANCH STAFF ONLY             " \
+    "==========================================" \
+    > /etc/motd
+
+USER ibrahim
+WORKDIR /home/ibrahim
+
+RUN mkdir -p /home/ibrahim/Documents /home/ibrahim/.ssh
+
+# Bash history with HQ internal addresses
+RUN printf '%s\n' \
+    "ping -c 2 10.0.5.1" \
+    "ssh devops-remote@10.0.1.40" \
+    "curl http://10.0.3.10:8000/employees" \
+    "smbclient -L //10.0.2.10 -N" \
+    "curl http://10.0.3.10:8000/payroll" \
+    > /home/ibrahim/.bash_history
+
+RUN printf '%s\n' \
+    "Nexus Dhaka Branch — IT Notes" \
+    "================================" \
+    "Branch SD-WAN: 10.0.5.1 (ask IT for WG config)" \
+    "HQ Bastion SSH: ssh devops-remote@10.0.1.40 (or port 2222 externally)" \
+    "HQ Intranet ERP: http://10.0.3.10:8000" \
+    "HQ AD DC: 10.0.2.10 (dc01.nexus.internal)" \
+    "" \
+    "For VPN issues contact: tahmed@nexus.internal" \
+    "Emergency: +880-1700-NEXUS-IT" \
+    > /home/ibrahim/Documents/branch_it_notes.txt
+
+USER root
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]

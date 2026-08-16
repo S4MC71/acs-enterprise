@@ -1,0 +1,98 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    openssh \
+    bash \
+    curl \
+    iputils \
+    iproute2 \
+    sudo \
+    shadow \
+    vim \
+    less \
+    grep \
+    procps \
+    net-tools \
+    samba-client
+
+# Setup SSH Server (Alpine path: /usr/sbin/sshd)
+RUN ssh-keygen -A && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "Banner /etc/ssh/ssh_banner" >> /etc/ssh/sshd_config
+
+RUN echo "** Nexus Global Enterprise - AUTHORIZED PERSONNEL ONLY **" > /etc/ssh/ssh_banner && \
+    echo "** HR Department Workstation - All sessions monitored. **" >> /etc/ssh/ssh_banner
+
+# Create sjenkins (HR Director) using Alpine-compatible adduser
+RUN adduser -D -s /bin/bash sjenkins && \
+    echo "sjenkins:HrDirector9921!" | chpasswd
+
+# Corporate MOTD
+RUN echo "==========================================" > /etc/motd && \
+    echo " NEXUS GLOBAL ENTERPRISE - IT SYSTEMS    " >> /etc/motd && \
+    echo " Human Resources Workstation (CAMPUS)     " >> /etc/motd && \
+    echo " Node: hr-workstation-01 | 10.0.4.10     " >> /etc/motd && \
+    echo " AUTHORIZED HR PERSONNEL ONLY.            " >> /etc/motd && \
+    echo "==========================================" >> /etc/motd
+
+# Seed HR files as sjenkins
+USER sjenkins
+WORKDIR /home/sjenkins
+
+RUN mkdir -p /home/sjenkins/Documents/HR_Records \
+             /home/sjenkins/Documents/Policies \
+             /home/sjenkins/.ssh
+
+# Realistic bash profile
+RUN echo 'export PS1="\[\033[01;35m\]sjenkins@hr-workstation-01\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' > /home/sjenkins/.bash_profile && \
+    echo 'source /home/sjenkins/.bash_profile 2>/dev/null || true' >> /home/sjenkins/.bashrc
+
+# Realistic bash history
+RUN printf '%s\n' \
+    "ping -c 2 10.0.2.10" \
+    "curl http://10.0.3.10:8000/employees" \
+    "curl http://10.0.3.10:8000/payroll" \
+    "smbclient //10.0.2.10/HR-Public -N" \
+    "ls ~/Documents/HR_Records/" \
+    "cat ~/Documents/HR_Records/executive_evaluations_2026.txt" \
+    > /home/sjenkins/.bash_history
+
+# HR confidential documents
+RUN printf '%s\n' \
+    "Nexus Global Enterprise — Confidential Executive Evaluation (2026 Q3)" \
+    "Classification: RESTRICTED — For HR Director Use Only" \
+    "-----------------------------------------------------------------------" \
+    "" \
+    "Employee: Marcus Vance (mvance@nexus.internal) — CISO" \
+    "Status: Performance Review Pending" \
+    "Note: Domain Admin account audited. New password policy enforced: NexusCISO_Mv@2026#" \
+    "" \
+    "Employee: Elena Rostova (erostova@nexus.internal) — Lead Systems Architect" \
+    "Status: Annual Review Complete" \
+    "Note: SSH key rotation complete. Still has access to dc01 admin shares." \
+    "" \
+    "Contact mvance or erostova for any ERP or DC-tier issues." \
+    "For critical incidents, use emergency account: it-emergency (same pwd policy)." \
+    > /home/sjenkins/Documents/HR_Records/executive_evaluations_2026.txt
+
+RUN printf '%s\n' \
+    "Nexus Global Enterprise — IT & Security Access Policy 2026" \
+    "" \
+    "Section 3.2 — Internal System Access:" \
+    "  - Data Center Intranet (ERP): http://10.0.3.10:8000" \
+    "  - File Backup Storage (MinIO): http://10.0.3.30:9000" \
+    "  - Domain Controller: dc01.nexus.internal (10.0.2.10)" \
+    "  - IT Scripts Share: \\\\\\\\dc01.nexus.internal\\IT-Backups (read-only)" \
+    "" \
+    "Section 4.1 — Password Policy:" \
+    "  Domain accounts must follow: [Name][Role]_[Year]# pattern" \
+    "  Example: NexusCISO_Mv@2026# or DevOpsP@ss2026!" \
+    "" \
+    "Contact IT Helpdesk: it-helpdesk@nexus.internal or SSH to bastion.nexus.internal (10.0.1.40)" \
+    > /home/sjenkins/Documents/Policies/it_access_policy_2026.txt
+
+USER root
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]

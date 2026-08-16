@@ -1,0 +1,146 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    openssh \
+    bash \
+    curl \
+    iputils \
+    iproute2 \
+    git \
+    postgresql15-client \
+    sudo \
+    shadow \
+    vim \
+    less \
+    file \
+    grep \
+    procps \
+    net-tools
+
+# Setup SSH Server properly (Alpine uses /usr/sbin/sshd)
+RUN ssh-keygen -A && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+
+# Create tahmed user using Alpine's adduser syntax
+RUN adduser -D -s /bin/bash tahmed && \
+    echo "tahmed:DevOpsP@ss2026!" | chpasswd && \
+    adduser tahmed wheel && \
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Setup realistic corporate MOTD and SSH banner
+RUN echo "==========================================" > /etc/motd && \
+    echo " NEXUS GLOBAL ENTERPRISE - IT SYSTEMS    " >> /etc/motd && \
+    echo " DevOps Engineering Workstation (CAMPUS)  " >> /etc/motd && \
+    echo " Node: dev-workstation-01 | 10.0.4.20    " >> /etc/motd && \
+    echo " AUTHORIZED ACCESS ONLY. All sessions     " >> /etc/motd && \
+    echo " are monitored and logged by SOC.         " >> /etc/motd && \
+    echo "==========================================" >> /etc/motd && \
+    echo "" >> /etc/motd && \
+    echo "Banner /etc/ssh/ssh_banner" >> /etc/ssh/sshd_config
+
+RUN echo "** Nexus Global Enterprise - AUTHORIZED PERSONNEL ONLY **" > /etc/ssh/ssh_banner && \
+    echo "** Unauthorized access will be prosecuted to the full extent of the law. **" >> /etc/ssh/ssh_banner && \
+    echo "** All activities on this system are monitored and recorded. **" >> /etc/ssh/ssh_banner
+
+# Seed Dev environment
+USER tahmed
+WORKDIR /home/tahmed
+
+RUN mkdir -p /home/tahmed/.ssh \
+             /home/tahmed/projects/nexus-infra \
+             /home/tahmed/projects/deploy-scripts \
+             /home/tahmed/notes
+
+# Generate SSH keypair for tahmed
+RUN ssh-keygen -t rsa -b 2048 -f /home/tahmed/.ssh/id_rsa -N "" && \
+    cat /home/tahmed/.ssh/id_rsa.pub > /home/tahmed/.ssh/authorized_keys && \
+    chmod 700 /home/tahmed/.ssh && chmod 600 /home/tahmed/.ssh/*
+
+# Realistic bash profile with custom PS1
+RUN echo 'export PS1="\[\033[01;32m\]tahmed@dev-workstation-01\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' > /home/tahmed/.bash_profile && \
+    echo 'source /home/tahmed/.bash_profile 2>/dev/null || true' >> /home/tahmed/.bashrc && \
+    echo 'alias ll="ls -lah"' >> /home/tahmed/.bashrc && \
+    echo 'alias ..="cd .."' >> /home/tahmed/.bashrc
+
+# Seed realistic bash history (this is a key pentesting artifact)
+RUN printf '%s\n' \
+    "# Last login: Fri Aug 15 23:41:09 2026 from 10.0.4.1" \
+    "ping -c 3 10.0.2.10" \
+    "smbclient -L //10.0.2.10 -N" \
+    "curl -s http://10.0.3.10:8000/employees" \
+    "psql -h 10.0.3.20 -U nexus_admin -d nexus_prod" \
+    "cat ~/projects/nexus-infra/db_creds.env" \
+    "ssh -i ~/.ssh/id_rsa erostova@10.0.2.10" \
+    "git -C ~/projects/nexus-infra pull" \
+    "python3 ~/projects/deploy-scripts/sync_monitoring.py" \
+    "ls /home/tahmed/.ssh/" \
+    "history" \
+    > /home/tahmed/.bash_history
+
+# Seed realistic project files with embedded credentials (key lateral movement artifact)
+RUN printf '%s\n' \
+    "# Nexus Infra Environment Config" \
+    "# DevOps Engineering — Internal Use Only" \
+    "# Last updated: 2026-08-12 by tahmed" \
+    "" \
+    "NEXUS_DC_DB_HOST=10.0.3.20" \
+    "NEXUS_DC_DB_PORT=5432" \
+    "NEXUS_DC_DB_NAME=nexus_prod" \
+    "NEXUS_DC_DB_USER=nexus_admin" \
+    "NEXUS_DC_DB_PASS=Nexu\$Prod2026!Sec" \
+    "" \
+    "NEXUS_SAN_HOST=10.0.3.30" \
+    "NEXUS_SAN_PORT=9000" \
+    "NEXUS_SAN_USER=nexus_san_root" \
+    "NEXUS_SAN_KEY=SuperS3cUr3_B4ckup_Vault_Pass_2026!" \
+    "" \
+    "NEXUS_ERP_HOST=10.0.3.10" \
+    "NEXUS_ERP_PORT=8000" \
+    "NEXUS_DC_SIEM=10.0.2.99" \
+    "NEXUS_AD_DC=10.0.2.10" \
+    > /home/tahmed/projects/nexus-infra/db_creds.env
+
+# Seed deploy monitoring script
+RUN printf '%s\n' \
+    "#!/usr/bin/env python3" \
+    "# Nexus Infrastructure Monitoring Sync Script" \
+    "# Runs every 30 minutes via cron" \
+    "import os, psycopg2" \
+    "" \
+    "DB_HOST = '10.0.3.20'" \
+    "DB_USER = 'nexus_admin'" \
+    "DB_PASS = 'Nexu\$Prod2026!Sec'" \
+    "DB_NAME = 'nexus_prod'" \
+    "" \
+    "def check_db_health():" \
+    "    conn = psycopg2.connect(host=DB_HOST, user=DB_USER, password=DB_PASS, dbname=DB_NAME)" \
+    "    cur = conn.cursor()" \
+    "    cur.execute('SELECT COUNT(*) FROM employees;')" \
+    "    print(f'Employee count: {cur.fetchone()[0]}')" \
+    "    conn.close()" \
+    "    print('[OK] Database health check passed')" \
+    "" \
+    "if __name__ == '__main__':" \
+    "    check_db_health()" \
+    > /home/tahmed/projects/deploy-scripts/sync_monitoring.py
+
+# Seed personal notes (breadcrumbs for students)
+RUN printf '%s\n' \
+    "TODO:" \
+    "- Fix db sync script, erostova complained it's breaking prod" \
+    "- Check svc_sqlprod Kerberos ticket renewal issue (see IT-Backups share)" \
+    "- Need to rotate SAN credentials next quarter" \
+    "- dc01 LDAP anonymous bind still enabled? Follow up with mvance" \
+    "" \
+    "Useful internal addresses:" \
+    "  ERP Intranet: http://10.0.3.10:8000" \
+    "  Backup SAN:   http://10.0.3.30:9000" \
+    "  AD DC:        \\\\\\\\dc01.nexus.internal" \
+    > /home/tahmed/notes/TODO.txt
+
+USER root
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]

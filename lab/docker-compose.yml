@@ -1,0 +1,574 @@
+version: '3.8'
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   NEXUS GLOBAL ENTERPRISE — LARGE ENTERPRISE NETWORK PENTESTING LAB
+#   Based on: enterprise-network.html "Large Enterprise Network" diagram
+#   Profiles:
+#     --profile core        → Standard Lab (14 nodes, ~4GB RAM)
+#     --profile enterprise  → + WAN/Branch/Security/DC-Fabric/Campus (~9GB)
+#     --profile cloud       → + Cloud Tier AWS/Azure mock (~2GB extra)
+#     All:  --profile core --profile enterprise --profile cloud (~34 nodes)
+# ═══════════════════════════════════════════════════════════════════════════
+
+networks:
+  # WAN / Internet Layer
+  wan_net:
+    name: nexus_wan_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 198.51.100.0/24
+
+  # ISP2 Secondary Uplink (Dual-homed BGP)
+  isp2_net:
+    name: nexus_isp2_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 203.0.113.0/24
+
+  # Cloud Infrastructure (AWS/Azure VPC simulation)
+  cloud_net:
+    name: nexus_cloud_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/24
+
+  # Branch Office LAN
+  branch_net:
+    name: nexus_branch_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.5.0/24
+
+  # VPN Tunnel Subnet (ZTNA clients)
+  vpn_net:
+    name: nexus_vpn_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.6.0/24
+
+  # DMZ (Public-facing perimeter)
+  dmz_net:
+    name: nexus_dmz_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.1.0/24
+
+  # Core Backbone (AD, SIEM, NAC, NMS)
+  core_net:
+    name: nexus_core_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.2.0/24
+
+  # Data Center (DB, ERP, SAN, Spine/Leaf)
+  dc_net:
+    name: nexus_dc_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.3.0/24
+
+  # Campus (Workstations, VoIP, IoT, Cameras)
+  campus_net:
+    name: nexus_campus_net
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.4.0/24
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ╔═══════════════════════════════════════════════════════╗
+  # ║  PROFILE: core  (Standard Lab — always start first)  ║
+  # ╚═══════════════════════════════════════════════════════╝
+
+  # Attacker Box (Kali-style Debian with full pentest toolkit)
+  attacker-box:
+    build: { context: ./config/attacker, dockerfile: Dockerfile }
+    container_name: nexus-attacker-box
+    hostname: kali-attacker
+    cap_add: [NET_ADMIN]
+    networks:
+      wan_net: { ipv4_address: 198.51.100.100 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # Edge Router (BGP Router A — Primary ISP1 uplink)
+  edge-router:
+    build: { context: ./config/edge-router, dockerfile: Dockerfile }
+    container_name: nexus-edge-router
+    hostname: edge-gw-01
+    cap_add: [NET_ADMIN]
+    networks:
+      wan_net: { ipv4_address: 198.51.100.1 }
+      dmz_net: { ipv4_address: 10.0.1.1 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # HQ Next-Gen Perimeter Firewall
+  hq-firewall:
+    build: { context: ./config/hq-firewall, dockerfile: Dockerfile }
+    container_name: nexus-hq-firewall
+    hostname: fw-perimeter-01
+    cap_add: [NET_ADMIN]
+    networks:
+      dmz_net:    { ipv4_address: 10.0.1.254 }
+      core_net:   { ipv4_address: 10.0.2.1   }
+      dc_net:     { ipv4_address: 10.0.3.1   }
+      campus_net: { ipv4_address: 10.0.4.1   }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # Nginx WAF / Reverse Proxy
+  corp-waf-proxy:
+    image: nginx:alpine
+    container_name: nexus-corp-waf-proxy
+    hostname: srv-waf-proxy
+    volumes:
+      - ./config/nginx-waf/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports: ["80:80"]
+    networks:
+      dmz_net: { ipv4_address: 10.0.1.10 }
+    depends_on: [corp-web-portal]
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # Corporate Web Portal (Flask — SQLi + CMDi vulnerable)
+  corp-web-portal:
+    build: { context: ./apps/corp-web, dockerfile: Dockerfile }
+    container_name: nexus-corp-web-portal
+    hostname: srv-dmz-web01
+    networks:
+      dmz_net: { ipv4_address: 10.0.1.20 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Corporate Mail Server (MailHog)
+  corp-mail-server:
+    image: mailhog/mailhog:latest
+    container_name: nexus-corp-mail-server
+    hostname: srv-mail-01
+    ports: ["8025:8025", "1025:1025"]
+    networks:
+      dmz_net: { ipv4_address: 10.0.1.30 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # SSH Bastion / Jump Host
+  corp-bastion:
+    build: { context: ./config/bastion, dockerfile: Dockerfile }
+    container_name: nexus-corp-bastion
+    hostname: bastion
+    cap_add: [NET_ADMIN]
+    ports: ["2222:22"]
+    networks:
+      dmz_net:    { ipv4_address: 10.0.1.40 }
+      core_net:   { ipv4_address: 10.0.2.5  }
+      campus_net: { ipv4_address: 10.0.4.5  }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # Active Directory Domain Controller (Samba)
+  nexus-ad-dc:
+    build: { context: ./config/samba-ad, dockerfile: Dockerfile }
+    container_name: nexus-ad-dc
+    hostname: dc01
+    cap_add: [NET_ADMIN]
+    networks:
+      core_net: { ipv4_address: 10.0.2.10 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # SIEM / SOC Syslog Collector
+  corp-siem-soc:
+    build: { context: ./config/syslog-server, dockerfile: Dockerfile }
+    container_name: nexus-corp-siem-soc
+    hostname: siem-soc-01
+    networks:
+      core_net: { ipv4_address: 10.0.2.99 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # Production PostgreSQL Database
+  dc-prod-database:
+    image: postgres:15-alpine
+    container_name: nexus-dc-prod-database
+    hostname: db-prod-01
+    environment:
+      POSTGRES_DB: nexus_prod
+      POSTGRES_USER: nexus_admin
+      POSTGRES_PASSWORD: "Nexu$$Prod2026!Sec"
+    volumes:
+      - ./config/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - nexus_pg_data:/var/lib/postgresql/data
+    networks:
+      dc_net: { ipv4_address: 10.0.3.20 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_admin -d nexus_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Internal ERP Intranet
+  dc-internal-erp:
+    build: { context: ./apps/internal-erp, dockerfile: Dockerfile }
+    container_name: nexus-dc-internal-erp
+    hostname: srv-erp-01
+    environment:
+      DB_HOST: "10.0.3.20"
+      DB_NAME: "nexus_prod"
+      DB_USER: "nexus_admin"
+      DB_PASSWORD: "Nexu$$Prod2026!Sec"
+    networks:
+      dc_net: { ipv4_address: 10.0.3.10 }
+    depends_on:
+      dc-prod-database: { condition: service_healthy }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # MinIO SAN Backup Storage
+  dc-backup-storage:
+    image: minio/minio:RELEASE.2024-01-13T07-53-03Z
+    container_name: nexus-dc-backup-storage
+    hostname: san-backup-01
+    environment:
+      MINIO_ROOT_USER: nexus_san_root
+      MINIO_ROOT_PASSWORD: "SuperS3cUr3_B4ckup_Vault_Pass_2026!"
+    command: server /data --console-address ":9001"
+    networks:
+      dc_net: { ipv4_address: 10.0.3.30 }
+    volumes:
+      - nexus_minio_data:/data
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # DevOps Workstation (tahmed)
+  pc-dev-01:
+    build: { context: ./config/workstations, dockerfile: Dockerfile.dev }
+    container_name: nexus-pc-dev-01
+    hostname: dev-workstation-01
+    cap_add: [NET_ADMIN]
+    networks:
+      campus_net: { ipv4_address: 10.0.4.20 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # HR Workstation (sjenkins)
+  pc-hr-01:
+    build: { context: ./config/workstations, dockerfile: Dockerfile.hr }
+    container_name: nexus-pc-hr-01
+    hostname: hr-workstation-01
+    cap_add: [NET_ADMIN]
+    networks:
+      campus_net: { ipv4_address: 10.0.4.10 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
+  # ╔═══════════════════════════════════════════════════════════╗
+  # ║  PROFILE: enterprise  (Large Enterprise additions)        ║
+  # ╚═══════════════════════════════════════════════════════════╝
+
+  # ISP2 Secondary Uplink Router (Dual BGP redundancy)
+  isp2-router:
+    build: { context: ./config/isp2-router, dockerfile: Dockerfile }
+    container_name: nexus-isp2-router
+    hostname: isp2-gw-01
+    cap_add: [NET_ADMIN]
+    networks:
+      isp2_net: { ipv4_address: 203.0.113.1 }
+      wan_net:  { ipv4_address: 198.51.100.2 }
+      dmz_net:  { ipv4_address: 10.0.1.2    }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DDoS Protection Scrubbing Center (Cloudflare/Akamai simulation)
+  ddos-proxy:
+    build: { context: ./config/ddos-proxy, dockerfile: Dockerfile }
+    container_name: nexus-ddos-proxy
+    hostname: ddos-scrub-01
+    ports: ["8080:80"]
+    networks:
+      isp2_net: { ipv4_address: 203.0.113.10 }
+      wan_net:  { ipv4_address: 198.51.100.10 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # ZTNA / Zero Trust VPN Gateway
+  ztna-gateway:
+    build: { context: ./config/ztna-gateway, dockerfile: Dockerfile }
+    container_name: nexus-ztna-gateway
+    hostname: ztna-gw-01
+    cap_add: [NET_ADMIN, SYS_MODULE]
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.proxy_arp=1
+    ports: ["51820:51820/udp", "8443:8443"]
+    networks:
+      dmz_net: { ipv4_address: 10.0.1.50 }
+      vpn_net: { ipv4_address: 10.0.6.1  }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # NAC — Network Access Control (Cisco ISE/ClearPass simulation)
+  nac-server:
+    build: { context: ./config/nac-server, dockerfile: Dockerfile }
+    container_name: nexus-nac-server
+    hostname: nac-ise-01
+    networks:
+      core_net: { ipv4_address: 10.0.2.15 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # NMS — Grafana + Prometheus Network Monitoring
+  nms-prometheus:
+    image: prom/prometheus:latest
+    container_name: nexus-nms-prometheus
+    hostname: prometheus-01
+    volumes:
+      - ./config/nms/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - nexus_prometheus_data:/prometheus
+    networks:
+      core_net: { ipv4_address: 10.0.2.20 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  nms-grafana:
+    image: grafana/grafana:latest
+    container_name: nexus-nms-grafana
+    hostname: nms-grafana-01
+    environment:
+      GF_SECURITY_ADMIN_USER: nexus_nms_admin
+      GF_SECURITY_ADMIN_PASSWORD: "NMS@Nexus2026!"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    ports: ["3000:3000"]
+    networks:
+      core_net: { ipv4_address: 10.0.2.21 }
+    depends_on: [nms-prometheus]
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DC Spine Switch 1 (Cisco Nexus 9516 / Arista 7500 simulation)
+  dc-spine-1:
+    build: { context: ./config/dc-fabric, dockerfile: Dockerfile.spine }
+    container_name: nexus-dc-spine-1
+    hostname: dc-spine-01
+    cap_add: [NET_ADMIN]
+    environment: { SPINE_ID: "1" }
+    networks:
+      dc_net:   { ipv4_address: 10.0.3.241 }
+      core_net: { ipv4_address: 10.0.2.41  }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DC Spine Switch 2
+  dc-spine-2:
+    build: { context: ./config/dc-fabric, dockerfile: Dockerfile.spine }
+    container_name: nexus-dc-spine-2
+    hostname: dc-spine-02
+    cap_add: [NET_ADMIN]
+    environment: { SPINE_ID: "2" }
+    networks:
+      dc_net:   { ipv4_address: 10.0.3.242 }
+      core_net: { ipv4_address: 10.0.2.42  }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DC Leaf Switch 1 (Top-of-Rack)
+  dc-leaf-1:
+    build: { context: ./config/dc-fabric, dockerfile: Dockerfile.leaf }
+    container_name: nexus-dc-leaf-1
+    hostname: dc-leaf-01
+    cap_add: [NET_ADMIN]
+    environment: { LEAF_ID: "1" }
+    networks:
+      dc_net: { ipv4_address: 10.0.3.243 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DC Leaf Switch 2
+  dc-leaf-2:
+    build: { context: ./config/dc-fabric, dockerfile: Dockerfile.leaf }
+    container_name: nexus-dc-leaf-2
+    hostname: dc-leaf-02
+    cap_add: [NET_ADMIN]
+    environment: { LEAF_ID: "2" }
+    networks:
+      dc_net: { ipv4_address: 10.0.3.244 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # DR / Backup Storage (separate from primary SAN)
+  dc-backup-dr:
+    image: minio/minio:RELEASE.2024-01-13T07-53-03Z
+    container_name: nexus-dc-backup-dr
+    hostname: san-dr-01
+    environment:
+      MINIO_ROOT_USER: nexus_dr_admin
+      MINIO_ROOT_PASSWORD: "DRBackup_Nexus@2026!"
+    command: server /data --console-address ":9003"
+    networks:
+      dc_net: { ipv4_address: 10.0.3.35 }
+    volumes:
+      - nexus_minio_dr_data:/data
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # Branch Office SD-WAN Edge (Dhaka Regional Branch)
+  branch-sdwan:
+    build: { context: ./config/branch-office, dockerfile: Dockerfile.sdwan }
+    container_name: nexus-branch-sdwan
+    hostname: branch-sdwan-dhaka
+    cap_add: [NET_ADMIN, SYS_MODULE]
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      isp2_net:   { ipv4_address: 203.0.113.50 }
+      branch_net: { ipv4_address: 10.0.5.1      }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # Branch Office Employee PC
+  branch-pc-01:
+    build: { context: ./config/branch-office, dockerfile: Dockerfile.branch-pc }
+    container_name: nexus-branch-pc-01
+    hostname: branch-pc-01
+    networks:
+      branch_net: { ipv4_address: 10.0.5.10 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # VoIP PBX (Asterisk — SIP brute-force target)
+  voip-pbx:
+    build: { context: ./config/voip, dockerfile: Dockerfile.pbx }
+    container_name: nexus-voip-pbx
+    hostname: voip-pbx-01
+    ports:
+      - "5060:5060/udp"
+      - "5060:5060/tcp"
+    networks:
+      campus_net: { ipv4_address: 10.0.4.50 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # IoT Device + MQTT Broker (unauthenticated — intentional)
+  iot-device-01:
+    build: { context: ./config/iot, dockerfile: Dockerfile }
+    container_name: nexus-iot-device-01
+    hostname: iot-campus-01
+    networks:
+      campus_net: { ipv4_address: 10.0.4.70 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # IP Camera CCTV Server (RTSP — unauthenticated)
+  ipcam-server:
+    build: { context: ./config/ipcam, dockerfile: Dockerfile }
+    container_name: nexus-ipcam-server
+    hostname: ipcam-01
+    ports:
+      - "8554:8554"   # RTSP
+      - "8888:8888"   # HLS
+    networks:
+      campus_net: { ipv4_address: 10.0.4.60 }
+    profiles: [enterprise]
+    restart: unless-stopped
+
+  # ╔═══════════════════════════════════════════════════════════╗
+  # ║  PROFILE: cloud  (AWS/Azure Cloud Infrastructure)         ║
+  # ╚═══════════════════════════════════════════════════════════╝
+
+  # Cloud Transit Gateway (AWS TGW / Azure VNet Peering)
+  cloud-gateway:
+    build: { context: ./config/cloud-tier/gateway, dockerfile: Dockerfile }
+    container_name: nexus-cloud-gateway
+    hostname: cloud-tgw-01
+    cap_add: [NET_ADMIN]
+    networks:
+      cloud_net: { ipv4_address: 172.16.0.1  }
+      dc_net:    { ipv4_address: 10.0.3.251  }
+    profiles: [cloud]
+    restart: unless-stopped
+
+  # Cloud Load Balancer (ALB simulation)
+  cloud-lb:
+    image: haproxy:2.9-alpine
+    container_name: nexus-cloud-lb
+    hostname: cloud-alb-01
+    volumes:
+      - ./config/cloud-tier/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      cloud_net: { ipv4_address: 172.16.0.10 }
+    profiles: [cloud]
+    restart: unless-stopped
+
+  # Kubernetes-style Cloud Microservice (SSRF + JWT vulnerable)
+  cloud-app:
+    build: { context: ./config/cloud-tier/cloud-app, dockerfile: Dockerfile }
+    container_name: nexus-cloud-app
+    hostname: cloud-app-01
+    ports: ["8090:8080"]
+    networks:
+      cloud_net: { ipv4_address: 172.16.0.20 }
+    profiles: [cloud]
+    restart: unless-stopped
+
+  # Cloud Managed Database (RDS simulation)
+  cloud-db:
+    image: postgres:15-alpine
+    container_name: nexus-cloud-db
+    hostname: cloud-rds-01
+    environment:
+      POSTGRES_DB: nexus_cloud_prod
+      POSTGRES_USER: nexus_rds_admin
+      POSTGRES_PASSWORD: "RdsNexusProd@2026!Cloud"
+    volumes:
+      - nexus_cloud_pg_data:/var/lib/postgresql/data
+    networks:
+      cloud_net: { ipv4_address: 172.16.0.30 }
+    profiles: [cloud]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_rds_admin -d nexus_cloud_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # SaaS SSO Portal (SAML/OAuth2 — credential stuffing target)
+  saas-sso:
+    build: { context: ./config/cloud-tier/saas-mock, dockerfile: Dockerfile }
+    container_name: nexus-saas-sso
+    hostname: sso-portal-01
+    ports: ["8443:8443"]
+    networks:
+      cloud_net: { ipv4_address: 172.16.0.40 }
+    profiles: [cloud]
+    restart: unless-stopped
+
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  nexus_pg_data:        { name: nexus_pg_data        }
+  nexus_minio_data:     { name: nexus_minio_data      }
+  nexus_minio_dr_data:  { name: nexus_minio_dr_data   }
+  nexus_prometheus_data:{ name: nexus_prometheus_data }
+  nexus_cloud_pg_data:  { name: nexus_cloud_pg_data   }

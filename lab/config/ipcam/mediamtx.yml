@@ -1,0 +1,51 @@
+---
+# MediaMTX Configuration — Nexus IP Camera Server
+# Node: ipcam-01.nexus.internal (10.0.4.60)
+
+# No authentication — intentional misconfiguration for lab
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+
+# API (no auth — allows listing streams from network)
+api: yes
+apiAddress: :9997
+
+# RTSP Server
+rtsp: yes
+rtspAddress: :8554
+# No RTSP auth (intentional)
+rtspAuthMethods: [basic]
+
+# HLS — accessible via browser
+hls: yes
+hlsAddress: :8888
+
+# WebRTC
+webrtc: yes
+webrtcAddress: :8889
+
+paths:
+  # Lobby Camera — fake CCTV stream
+  nexus-lobby:
+    source: publisher
+    record: no
+
+  # Server room camera — high value target for pivot intel
+  nexus-serverroom:
+    source: publisher
+    record: no
+
+  # Parking lot camera
+  nexus-parking:
+    source: publisher
+    record: no
+
+  # All paths readable without auth
+  ~.*:
+    source: publisher

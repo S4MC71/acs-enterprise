@@ -1,0 +1,42 @@
+Nexus Global Enterprise — DevOps Infrastructure Runbook v4.2
+Last Updated: 2026-07-30 | Classification: INTERNAL - IT ENGINEERING
+
+=============================================================
+QUICK REFERENCE: INTERNAL SYSTEMS
+=============================================================
+
+Production Database:
+  Host: 10.0.3.20  Port: 5432
+  DB:   nexus_prod
+  User: nexus_admin
+  Note: See sync_prod_db.sh for automated credentials
+
+Data Center Intranet (ERP):
+  URL:  http://10.0.3.10:8000
+  Sections: /employees /payroll /servers /api/v1/tokens
+
+SAN Backup Storage (MinIO):
+  URL:  http://10.0.3.30:9000  (S3-compatible)
+  Console: http://10.0.3.30:9001
+
+Active Directory / DNS:
+  DC01: dc01.nexus.internal (10.0.2.10)
+  Domain: NEXUS.INTERNAL
+  Realm: NEXUS.INTERNAL
+  DNS: 10.0.2.10
+
+SIEM / SOC Monitoring:
+  Syslog: 10.0.2.99:514 (UDP)
+  Query logs: /var/log/nexus-syslog/
+
+SSH Bastion (Jump Host):
+  Host: bastion.nexus.internal (10.0.1.40)
+  User: devops-remote
+  Note: Gateway to internal networks from DMZ
+
+=============================================================
+ESCALATION CONTACTS
+=============================================================
+CISO:          Marcus Vance       mvance@nexus.internal
+Lead Arch:     Elena Rostova      erostova@nexus.internal
+DevOps Lead:   Tanvir Ahmed       tahmed@nexus.internal

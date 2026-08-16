@@ -1,0 +1,19 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    bash \
+    iptables \
+    iproute2 \
+    iputils \
+    wireguard-tools \
+    curl \
+    net-tools \
+    openssh \
+    bind-tools
+
+COPY start-branch-sdwan.sh /usr/local/bin/start-branch-sdwan.sh
+RUN chmod +x /usr/local/bin/start-branch-sdwan.sh
+
+EXPOSE 51820/udp
+
+CMD ["/usr/local/bin/start-branch-sdwan.sh"]

@@ -1,0 +1,13 @@
+FROM alpine:3.19
+
+# asterisk-pjsip may not exist as standalone in Alpine — use base asterisk which includes SIP
+RUN apk add --no-cache bash asterisk curl iproute2 net-tools
+
+RUN mkdir -p /etc/asterisk /var/spool/asterisk/voicemail /var/log/asterisk /var/run/asterisk \
+             /var/lib/asterisk/sounds /var/spool/asterisk/outgoing
+
+COPY asterisk-configs/ /etc/asterisk/
+
+EXPOSE 5060/udp 5060/tcp 10000-10020/udp
+
+CMD ["asterisk", "-f", "-C", "/etc/asterisk/asterisk.conf", "-vvg"]

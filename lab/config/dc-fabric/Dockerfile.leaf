@@ -1,0 +1,5 @@
+FROM alpine:3.19
+RUN apk add --no-cache bash iptables iproute2 iputils curl net-tools
+COPY start-leaf.sh /usr/local/bin/start-leaf.sh
+RUN chmod +x /usr/local/bin/start-leaf.sh
+CMD ["/usr/local/bin/start-leaf.sh"]
