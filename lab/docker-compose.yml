@@ -567,8 +567,14 @@ services:
 
 # ─────────────────────────────────────────────────────────────────────────────
 volumes:
-  nexus_pg_data:        { name: nexus_pg_data        }
-  nexus_minio_data:     { name: nexus_minio_data      }
-  nexus_minio_dr_data:  { name: nexus_minio_dr_data   }
-  nexus_prometheus_data:{ name: nexus_prometheus_data }
-  nexus_cloud_pg_data:  { name: nexus_cloud_pg_data   }
+  nexus_pg_data:
+    name: nexus_pg_data
+  nexus_minio_data:
+    name: nexus_minio_data
+  nexus_minio_dr_data:
+    name: nexus_minio_dr_data
+  nexus_prometheus_data:
+    name: nexus_prometheus_data
+  nexus_cloud_pg_data:
+    name: nexus_cloud_pg_data
+

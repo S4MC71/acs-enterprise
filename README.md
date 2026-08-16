@@ -244,9 +244,11 @@ cat /var/log/nexus-alerts/auth-failures.log
 
 ```
 acs-enterprise/
+├── README.md                       # Main repository README
 ├── enterprise-network.html         # Architecture diagram (do not modify)
 ├── AI_AGENT_CONTEXT.md             # AI agent handover context
 └── lab/
+    ├── README.md                   # Lab specific documentation
     ├── docker-compose.yml          # 33 containers, 3 profiles, 9 subnets
     ├── scripts/
     │   ├── start-lab.ps1           # Windows launcher (interactive menu)
