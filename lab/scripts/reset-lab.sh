@@ -8,7 +8,7 @@ echo -e "\033[1;33m============================================================\
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-docker compose down -v --remove-orphans
+docker compose --profile core --profile enterprise --profile cloud down -v --remove-orphans
 
 echo ""
 echo -e "\033[1;32m[+] All containers, networks, and lab state removed successfully.\033[0m"
