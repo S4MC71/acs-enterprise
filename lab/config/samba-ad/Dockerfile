@@ -8,7 +8,7 @@ RUN apk add --no-cache \
     bash \
     bind-tools \
     shadow \
-    tdb-tools \
+    tdb \
     coreutils
 
 # Create samba runtime directories
