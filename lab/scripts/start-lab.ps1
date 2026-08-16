@@ -130,7 +130,7 @@ if ($exitCode -eq 0) {
     }
     Write-Host ""
     Write-Host "  Student Entry Points:" -ForegroundColor Yellow
-    Write-Host "  [Black-Box]   docker exec -it nexus-attacker-box bash"
+    Write-Host "  [Black-Box]   Use your local Kali/WSL environment (see docs/attacker_tools_guide.md)"
     Write-Host "  [Gray-Box]    docker exec -it nexus-pc-dev-01 bash"
     Write-Host "  [Blue-Team]   docker exec -it nexus-corp-siem-soc bash"
     Write-Host ""

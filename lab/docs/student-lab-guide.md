@@ -17,10 +17,7 @@ Welcome to the **Nexus Global Enterprise Security Assessment**. In this lab, you
 ### 🅰️ Scenario 1: External Black-Box Penetration Test
 You have **Zero Prior Knowledge**. You are given only the external perimeter IP address.
 
-1. **Access Point:** Connect to the pre-configured attacker container:
-   ```bash
-   docker exec -it nexus-attacker-box bash
-   ```
+1. **Access Point:** Connect to your local pentest machine (e.g. Kali VM) and set up the tools as described in `docs/attacker_tools_guide.md`.
 2. **Scope / Target:** `198.51.100.10` (or `10.0.1.10` via Edge Gateway).
 3. **Milestones:**
    - [ ] **Phase 1 - Reconnaissance:** Discover exposed ports and running services on the perimeter.

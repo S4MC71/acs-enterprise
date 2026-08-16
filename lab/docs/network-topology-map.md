@@ -20,7 +20,6 @@
 =================================================================================================
 Container Name            Hostname            Subnet(s)                   Assigned IP(s)
 =================================================================================================
-nexus-attacker-box        kali-attacker       wan_net                     198.51.100.100
 nexus-edge-router         edge-gw-01          wan_net, dmz_net            198.51.100.1, 10.0.1.1
 nexus-hq-firewall         fw-perimeter-01     dmz, core, dc, campus       10.0.1.254, 10.0.2.1, 
                                                                           10.0.3.1, 10.0.4.1

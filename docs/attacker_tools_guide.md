@@ -1,94 +1,73 @@
-FROM debian:12-slim
+# 🛠️ Nexus Pentest Tools & Setup Guide
 
-ENV DEBIAN_FRONTEND=noninteractive
+Since the Nexus Enterprise Lab no longer includes a pre-built attacker container, you must configure your own pentesting environment. A local **Kali Linux** virtual machine (or WSL2 Kali instance) is highly recommended.
 
-# Install core pentesting packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
-    curl \
-    wget \
-    nmap \
-    netcat-openbsd \
-    dnsutils \
-    socat \
-    python3 \
-    python3-pip \
-    python3-venv \
-    smbclient \
-    tcpdump \
-    traceroute \
-    iputils-ping \
-    iproute2 \
-    net-tools \
-    openssh-client \
-    proxychains4 \
-    hydra \
-    john \
-    gobuster \
-    masscan \
-    ldap-utils \
-    postgresql-client \
-    vim \
-    less \
-    jq \
-    git \
-    file \
-    procps \
-    && rm -rf /var/lib/apt/lists/*
+Below are the tools and configurations you need to interact with the lab, extracted from the original `attacker-box` design.
 
-# Install Impacket (full suite) into system Python
-RUN python3 -m pip install --break-system-packages --no-cache-dir \
-    impacket \
-    bloodhound \
-    ldap3 \
-    dnspython \
-    requests \
-    colorama \
-    pycryptodome
+---
 
-# Install chisel (HTTP tunnel for pivoting — key tool)
-RUN wget -q https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_linux_amd64.gz \
-    -O /tmp/chisel.gz && \
-    gunzip /tmp/chisel.gz && \
-    mv /tmp/chisel /usr/local/bin/chisel && \
-    chmod +x /usr/local/bin/chisel
+## 1. Core System Packages
 
-# Create symlinks for impacket tools so they work directly in shell (no venv activation needed)
-RUN for script in \
-    GetNPUsers.py \
-    GetUserSPNs.py \
-    GetADUsers.py \
-    smbclient.py \
-    secretsdump.py \
-    psexec.py \
-    wmiexec.py \
-    smbexec.py \
-    atexec.py \
-    lookupsid.py \
-    samrdump.py \
-    rpcdump.py \
-    ifmap.py \
-    reg.py \
-    services.py \
-    netview.py \
-    addcomputer.py \
-    ticketer.py \
-    getST.py \
-    getTGT.py; do \
-    if [ -f /usr/local/bin/$script ]; then \
-        chmod +x /usr/local/bin/$script; \
-    fi; \
-done
+Install these required packages via `apt-get` (Debian/Ubuntu/Kali):
 
-# Custom proxychains4 config for pivoting
-RUN echo "[ProxyList]" > /etc/proxychains4.conf && \
-    echo "socks5 127.0.0.1 1080" >> /etc/proxychains4.conf
+```bash
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    bash curl wget nmap netcat-traditional dnsutils socat \
+    python3 python3-pip python3-venv smbclient tcpdump \
+    traceroute iputils-ping iproute2 net-tools openssh-client \
+    proxychains4 hydra john gobuster masscan ldap-utils \
+    postgresql-client vim less jq git file procps
+```
+*(Note: Kali Linux usually has most of these pre-installed)*
 
-# Professional engagement workspace
-WORKDIR /root/pentest_workspace
+## 2. Python Pentesting Ecosystem (Impacket)
 
-# Seed structured engagement brief and cheat-sheet
-RUN cat > /root/pentest_workspace/ENGAGEMENT_BRIEF.txt << 'EOF'
+You will need the Impacket suite for Active Directory exploitation. Install them via `pip`:
+
+```bash
+python3 -m pip install --break-system-packages \
+    impacket bloodhound ldap3 dnspython requests colorama pycryptodome
+```
+*(Note: If you prefer, install these inside a Python virtual environment to avoid `--break-system-packages`.)*
+
+## 3. Chisel (For Pivoting & Tunneling)
+
+Chisel is required to pivot from the DMZ to the internal Corporate Backbone.
+
+```bash
+wget -q https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_linux_amd64.gz -O /tmp/chisel.gz
+gunzip /tmp/chisel.gz
+sudo mv /tmp/chisel /usr/local/bin/chisel
+sudo chmod +x /usr/local/bin/chisel
+```
+
+## 4. Proxychains Configuration
+
+To route your tools (like nmap or smbclient) through your Chisel tunnel, you must configure `proxychains4`.
+
+Edit `/etc/proxychains4.conf` and ensure the last line is:
+```ini
+[ProxyList]
+socks5 127.0.0.1 1080
+```
+
+## 5. Custom Lab Wordlist
+
+Create a custom password list for brute-forcing services in the lab:
+
+```bash
+mkdir -p ~/pentest_workspace/wordlists
+printf 'admin\nnexus\npassword\n123456\nadmin123\nNexus@2026\nWinter2026!\nDevOpsP@ss2026!\nNexusTechAdmin2026!\ndevops-remote@123\nHrDirector9921!\nNexusCISO_Mv@2026#\n' > ~/pentest_workspace/wordlists/nexus-passwords.txt
+```
+
+---
+
+## 📄 Engagement Brief
+
+You can save this as `ENGAGEMENT_BRIEF.txt` in your workspace to understand the lab scope.
+
+```text
 ╔══════════════════════════════════════════════════════════════════╗
 ║         NEXUS GLOBAL ENTERPRISE — PENETRATION TEST              ║
 ║         Authorized Red Team Assessment — 2026-08-16             ║
@@ -111,9 +90,15 @@ OBJECTIVES (in order):
   [5] Retrieve Data Center Crown Jewels (Flags)
 
 CTF FLAG FORMAT: FLAG{...}
-EOF
+```
 
-RUN cat > /root/pentest_workspace/CHEATSHEET.txt << 'EOF'
+---
+
+## 📝 Lab Cheatsheet
+
+Save this as `CHEATSHEET.txt` for quick reference during your pentest.
+
+```text
 ═══════════════════════════════════════════════
    NEXUS LAB — QUICK PENTEST CHEATSHEET
 ═══════════════════════════════════════════════
@@ -170,11 +155,4 @@ RUN cat > /root/pentest_workspace/CHEATSHEET.txt << 'EOF'
    # Default SSH pass spray: Winter2026! / Nexus@2026 / devops-remote@123
 
 ═══════════════════════════════════════════════
-EOF
-
-# Create a wordlist directory for brute-forcing
-RUN mkdir -p /root/wordlists && \
-    printf 'admin\nnexus\npassword\n123456\nadmin123\nNexus@2026\nWinter2026!\nDevOpsP@ss2026!\nNexusTechAdmin2026!\ndevops-remote@123\nHrDirector9921!\nNexusCISO_Mv@2026#\n' \
-    > /root/wordlists/nexus-passwords.txt
-
-CMD ["bash", "--login"]
+```

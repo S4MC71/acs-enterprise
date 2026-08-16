@@ -8,7 +8,7 @@
 ## 1. Complete Black-Box Attack Chain (Step-by-Step)
 
 ### Step 1: External Reconnaissance
-From the attacker machine (`nexus-attacker-box`):
+From your local pentest machine:
 ```bash
 # Scan external perimeter
 nmap -sV -p 80,443,8025 10.0.1.10

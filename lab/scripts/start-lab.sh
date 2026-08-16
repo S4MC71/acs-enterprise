@@ -53,7 +53,7 @@ if [ $? -eq 0 ]; then
         echo "  SaaS SSO:           http://localhost:8443"
     fi
     echo ""
-    echo "  Attacker:  docker exec -it nexus-attacker-box bash"
+    echo "  Pentest:   Use your local Kali/WSL environment (see docs/attacker_tools_guide.md)"
     echo "  Health:    ./scripts/check-health.sh"
 else
     echo ""

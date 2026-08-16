@@ -6,7 +6,6 @@ echo -e "\033[1;33m 🔍 Checking Nexus Enterprise Lab Container Status...\033[0
 echo -e "\033[1;36m============================================================\033[0m"
 
 CONTAINERS=(
-    "nexus-attacker-box"
     "nexus-edge-router"
     "nexus-hq-firewall"
     "nexus-corp-waf-proxy"

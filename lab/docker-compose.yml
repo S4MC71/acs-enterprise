@@ -91,19 +91,6 @@ services:
   # ║  PROFILE: core  (Standard Lab — always start first)  ║
   # ╚═══════════════════════════════════════════════════════╝
 
-  # Attacker Box (Kali-style Debian with full pentest toolkit)
-  attacker-box:
-    build: { context: ./config/attacker, dockerfile: Dockerfile }
-    container_name: nexus-attacker-box
-    hostname: kali-attacker
-    cap_add: [NET_ADMIN]
-    networks:
-      wan_net: { ipv4_address: 198.51.100.100 }
-    profiles: [core, enterprise]
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-
   # Edge Router (BGP Router A — Primary ISP1 uplink)
   edge-router:
     build: { context: ./config/edge-router, dockerfile: Dockerfile }

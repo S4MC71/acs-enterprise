@@ -9,7 +9,6 @@ Write-Host "============================================================" -Foreg
 
 $allContainers = @(
     # core profile
-    @{Name="nexus-attacker-box";     Zone="[WAN]   "; Role="Attacker Box (Kali)";          Profile="core"},
     @{Name="nexus-edge-router";      Zone="[WAN]   "; Role="Edge Router (BGP-A / ISP1)";   Profile="core"},
     @{Name="nexus-hq-firewall";      Zone="[NGFW]  "; Role="Perimeter Firewall";           Profile="core"},
     @{Name="nexus-corp-waf-proxy";   Zone="[DMZ]   "; Role="Nginx WAF / Reverse Proxy";    Profile="core"},

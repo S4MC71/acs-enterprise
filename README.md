@@ -147,8 +147,9 @@ docker compose --profile core --profile enterprise --profile cloud down
 ### SSH / Container Access
 
 ```bash
-# Attacker Box (Black-Box entry)
-docker exec -it nexus-attacker-box bash
+# Pentest Box (Black-Box entry)
+# Use your own local Kali Linux / WSL environment
+# See docs/attacker_tools_guide.md for setup
 
 # SSH Bastion (from host)
 ssh devops-remote@localhost -p 2222
@@ -192,7 +193,7 @@ Extension 1003 — Tanvir Ahmed (weak password: 1234)  ← brute-force target
 ### MQTT IoT
 
 ```bash
-# Subscribe to all topics (from attacker box)
+# Subscribe to all topics (from pentest box)
 mosquitto_sub -h 10.0.4.70 -t '#' -v
 ```
 
@@ -201,10 +202,9 @@ mosquitto_sub -h 10.0.4.70 -t '#' -v
 ## 🎯 Pentesting Modes
 
 ### Black-Box (No prior knowledge)
+Read `docs/attacker_tools_guide.md` to setup your environment.
 ```bash
-docker exec -it nexus-attacker-box bash
-cat ENGAGEMENT_BRIEF.txt    # Read your scope
-cat CHEATSHEET.txt          # Quick reference
+# From your own pentest machine:
 nmap -sS -sV -p 80,22,8025 198.51.100.10
 ```
 

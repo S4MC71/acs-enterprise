@@ -38,7 +38,6 @@
 ### Core Profile (14 containers — Standard Lab)
 | Container | IP | Role |
 |:---|:---|:---|
-| nexus-attacker-box | 198.51.100.100 | Kali-style Debian with full pentest toolkit |
 | nexus-edge-router | 198.51.100.1 / 10.0.1.1 | BGP Edge Router A (ISP1) |
 | nexus-hq-firewall | 10.0.1.254 (multi-homed) | Stateful iptables NGFW |
 | nexus-corp-waf-proxy | 10.0.1.10 | Nginx WAF / Reverse Proxy |
@@ -90,7 +89,7 @@
 
 | Mode | Entry Point | Credentials |
 |:---|:---|:---|
-| Black-Box | `docker exec -it nexus-attacker-box bash` | None |
+| Black-Box | Local external Kali/WSL VM | None |
 | Gray-Box DevOps | `docker exec -it nexus-pc-dev-01 bash` | `tahmed / DevOpsP@ss2026!` |
 | Gray-Box HR | `docker exec -it nexus-pc-hr-01 bash` | `sjenkins / HrDirector9921!` |
 | Gray-Box Branch | `docker exec -it nexus-branch-pc-01 bash` | `ibrahim / Branch@2026` |
