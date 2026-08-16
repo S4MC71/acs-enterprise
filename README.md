@@ -60,18 +60,31 @@ chmod +x scripts/start-lab.sh
 
 ### 4. Verify All Containers are Running
 
+**Windows:**
 ```powershell
 .\scripts\check-health.ps1
 ```
 
+**Linux / macOS / WSL:**
+```bash
+./scripts/check-health.sh
+```
+
 ### 5. Stop the Lab
 
+**Windows:**
 ```powershell
 # Stop all profiles (preserves data volumes)
 docker compose --profile core --profile enterprise --profile cloud down
 
 # Full reset — removes ALL containers, networks, and volumes
 .\scripts\reset-lab.ps1
+```
+
+**Linux / macOS / WSL:**
+```bash
+# Full reset — removes ALL containers, networks, and volumes
+./scripts/reset-lab.sh
 ```
 
 ---
