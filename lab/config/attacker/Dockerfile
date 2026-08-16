@@ -26,7 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     john \
     gobuster \
     masscan \
-    enum4linux \
     ldap-utils \
     postgresql-client \
     vim \
