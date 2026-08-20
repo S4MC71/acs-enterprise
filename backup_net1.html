@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Network Architecture</title>
+    <!-- Importing a beautiful font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 3rem 1rem;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 1.5rem auto;
+            line-height: 1.6;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        button:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        button.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .diagram-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow-x: auto;
+            animation: fadeIn 1s ease-out 0.3s both;
+            display: grid;
+            place-items: center;
+        }
+
+        .mermaid-diagram {
+            grid-column: 1;
+            grid-row: 1;
+            opacity: 0;
+            pointer-events: none;
+            width: 100%;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .mermaid-diagram.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Enterprise Network Architecture</h1>
+        <p class="subtitle">Switch between standard and a highly complex, large-scale enterprise network.</p>
+        <div class="controls">
+            <button id="btnStandard" class="active" onclick="showDiagram('standard')">Standard Network</button>
+            <button id="btnLarge" onclick="showDiagram('large')">Large Enterprise Network</button>
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        
+        <!-- ==============================
+             STANDARD NETWORK DIAGRAM
+        =============================== -->
+        <div id="standard-diagram" class="mermaid-diagram active">
+            <div class="mermaid">
+                %%{init: {
+                    'theme': 'base',
+                    'themeVariables': { 
+                        'fontFamily': 'Inter', 
+                        'primaryColor': '#1e293b', 
+                        'primaryTextColor': '#f8fafc', 
+                        'primaryBorderColor': '#3b82f6', 
+                        'lineColor': '#94a3b8', 
+                        'clusterBkg': 'rgba(15, 23, 42, 0.5)',
+                        'clusterBorder': '#475569'
+                    }
+                }}%%
+                flowchart TD
+                    Internet((🌐 Internet))
+                    subgraph Edge[Perimeter / Edge Layer]
+                        EdgeRouter[Edge Router]
+                        Firewall[Next-Gen Firewall]
+                        VPN[VPN Concentrator]
+                    end
+                    subgraph DMZ[DMZ - Public Facing]
+                        LoadBalancer[Load Balancer]
+                        WebServers[Web / App Servers]
+                    end
+                    subgraph Core[Core Layer - Backbone]
+                        CoreSwitch{Core Switch}
+                        SDWAN[SD-WAN Appliance]
+                    end
+                    subgraph DC[Data Center]
+                        DCSwitch[DC Aggregation Switch]
+                        SAN[(SAN / Storage)]
+                        DB[(Database Servers)]
+                        AD[Active Directory / DNS]
+                    end
+                    subgraph Distribution[Distribution Layer]
+                        DistSwitch1[Distribution Switch 1]
+                        DistSwitch2[Distribution Switch 2]
+                    end
+                    subgraph Access[Access Layer]
+                        AccessSwitch1[Access Switch 1]
+                        AccessSwitch2[Access Switch 2]
+                        WLC[Wireless LAN Controller]
+                    end
+                    subgraph Endpoints[Endpoints & Users]
+                        PC[🖥️ Desktop PCs]
+                        Printer[🖨️ Printers]
+                        AP1((📡 Wi-Fi AP))
+                        AP2((📡 Wi-Fi AP))
+                        Mobile[📱 Laptops & Phones]
+                    end
+
+                    Internet <==> EdgeRouter
+                    Internet <==> SDWAN
+                    EdgeRouter <--> Firewall
+                    EdgeRouter <--> VPN
+                    Firewall <--> LoadBalancer
+                    LoadBalancer <--> WebServers
+                    Firewall <==> CoreSwitch
+                    VPN --> CoreSwitch
+                    SDWAN <==> CoreSwitch
+                    CoreSwitch <==> DCSwitch
+                    DCSwitch <--> SAN
+                    DCSwitch <--> DB
+                    DCSwitch <--> AD
+                    CoreSwitch <==> DistSwitch1
+                    CoreSwitch <==> DistSwitch2
+                    DistSwitch1 <==> AccessSwitch1
+                    DistSwitch2 <==> AccessSwitch2
+                    AccessSwitch1 <--> PC
+                    AccessSwitch1 <--> Printer
+                    AccessSwitch2 <--> WLC
+                    WLC <--> AP1
+                    WLC <--> AP2
+                    AP1 -.-> Mobile
+                    AP2 -.-> Mobile
+
+                    classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:5px,ry:5px;
+                    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
+                    classDef core fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
+                    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px;
+                    class DB,SAN database;
+                    class CoreSwitch core;
+                    class Internet internet;
+            </div>
+        </div>
+
+        <!-- ==============================
+             LARGE ENTERPRISE DIAGRAM
+        =============================== -->
+        <div id="large-diagram" class="mermaid-diagram">
+            <div class="mermaid">
+                %%{init: {
+                    'theme': 'base',
+                    'themeVariables': { 
+                        'fontFamily': 'Inter', 
+                        'primaryColor': '#0f172a', 
+                        'primaryTextColor': '#e2e8f0', 
+                        'primaryBorderColor': '#6366f1', 
+                        'lineColor': '#64748b', 
+                        'clusterBkg': 'rgba(30, 41, 59, 0.4)',
+                        'clusterBorder': '#475569'
+                    }
+                }}%%
+                flowchart TD
+                    Internet((🌐 Internet and Cloud))
+                    ISP1[ISP 1 - Primary]
+                    ISP2[ISP 2 - Secondary]
+                    SaaS[SaaS Apps<br/>Office 365, Salesforce]
+                    DDoS[DDoS Protection<br/>Cloudflare / Akamai]
+                    
+                    %% CLOUD INFRASTRUCTURE
+                    subgraph Cloud [Cloud Infrastructure - AWS/Azure]
+                        TGW[Transit Gateway / VNet Peering]
+                        CloudLB[Cloud Load Balancer]
+                        K8s[Kubernetes Cluster]
+                        CloudDB[(Cloud Managed Database)]
+                        TGW --- CloudLB
+                        CloudLB --- K8s
+                        K8s --- CloudDB
+                    end
+
+                    %% REMOTE ACCESS & BRANCHES
+                    subgraph Remote [Remote Branches & Users]
+                        RemoteUser[Remote Workers]
+                        BranchOffice[Branch Office Network]
+                        SDWANBranch[Branch SD-WAN Edge]
+                        BranchOffice --- SDWANBranch
+                    end
+
+                    Internet <==> DDoS
+                    DDoS <==> ISP1
+                    DDoS <==> ISP2
+                    Internet <==> SaaS
+                    Internet <==> Cloud
+                    RemoteUser -.-> Internet
+                    SDWANBranch <==> Internet
+
+                    %% HEADQUARTERS PERIMETER
+                    subgraph HQEdge [HQ Perimeter Edge]
+                        BGPRouters[Dual BGP Edge Routers]
+                        WAF[Web Application Firewall]
+                        HQFW[Redundant NGFW Cluster]
+                        ZTNA[Zero Trust / VPN Gateway]
+                    end
+
+                    ISP1 <==> BGPRouters
+                    ISP2 <==> BGPRouters
+                    BGPRouters <--> WAF
+                    WAF <--> HQFW
+                    BGPRouters <--> ZTNA
+                    ZTNA <--> HQFW
+                    
+                    %% DMZ
+                    subgraph DMZ [Demilitarized Zone - DMZ]
+                        DMZSwitch[DMZ Switch]
+                        ReverseProxy[Reverse Proxy / ADC]
+                        MailRelay[Email Security Gateway]
+                        Bastion[Bastion / Jump Host]
+                        DMZSwitch --- ReverseProxy
+                        DMZSwitch --- MailRelay
+                        DMZSwitch --- Bastion
+                    end
+                    HQFW <--> DMZSwitch
+
+                    %% HQ CORE
+                    subgraph Core [Core Backbone - vPC / VSS]
+                        CoreA{Core Switch A}
+                        CoreB{Core Switch B}
+                        CoreA === CoreB
+                    end
+
+                    HQFW <==> CoreA
+                    HQFW <==> CoreB
+                    
+                    %% SD-WAN
+                    subgraph SDWANLayer [WAN Edge]
+                        SDWANHub[SD-WAN Hub Appliance]
+                    end
+                    SDWANHub <==> Internet
+                    SDWANHub <==> CoreA
+                    SDWANHub <==> CoreB
+                    
+                    %% SECURITY & MANAGEMENT
+                    subgraph SecMgmt [Security & Management / OOB]
+                        SIEM[SIEM / SOC]
+                        NAC[Network Access Control - ISE/ClearPass]
+                        NMS[Network Monitoring - SolarWinds]
+                    end
+                    CoreA --- SecMgmt
+                    CoreB --- SecMgmt
+
+                    %% ON PREM DATA CENTER (SPINE-LEAF)
+                    subgraph DC [On-Prem Data Center - Spine/Leaf]
+                        Spine1[Spine Switch 1]
+                        Spine2[Spine Switch 2]
+                        Leaf1[Leaf Switch 1]
+                        Leaf2[Leaf Switch 2]
+                        VMware[VMware ESXi Cluster]
+                        SAN[(All-Flash SAN)]
+                        MainDB[(Oracle/SQL DB)]
+                        Backup[(Backup & DR Storage)]
+                        Spine1 === Leaf1
+                        Spine1 === Leaf2
+                        Spine2 === Leaf1
+                        Spine2 === Leaf2
+                        Leaf1 --- VMware
+                        Leaf2 --- VMware
+                        Leaf1 --- MainDB
+                        Leaf2 --- SAN
+                        Leaf2 --- Backup
+                    end
+                    
+                    CoreA <==> Spine1
+                    CoreB <==> Spine2
+
+                    %% DISTRIBUTION
+                    subgraph Dist [Campus Distribution]
+                        DistA[Distribution Switch A]
+                        DistB[Distribution Switch B]
+                    end
+                    CoreA <==> DistA
+                    CoreB <==> DistB
+                    DistA === DistB
+
+                    %% ACCESS
+                    subgraph Access [Campus Access Layer]
+                        Acc1[Access Switch 1 - PoE+]
+                        Acc2[Access Switch 2 - PoE+]
+                        WLC1[Primary WLC]
+                        WLC2[Secondary WLC]
+                    end
+                    DistA <==> Acc1
+                    DistB <==> Acc2
+                    DistA --- WLC1
+                    DistB --- WLC2
+                    
+                    %% ENDPOINTS
+                    subgraph Endpoints [Endpoints]
+                        VoIP[☎️ VoIP Phones]
+                        Cam[📹 IP Cameras / IoT]
+                        APs[📡 High-Density APs]
+                        Users[💻 User Workstations]
+                    end
+                    Acc1 --- VoIP
+                    Acc1 --- Users
+                    Acc2 --- Cam
+                    Acc2 --- APs
+                    WLC1 -.- APs
+                    WLC2 -.- APs
+
+                    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:5px,ry:5px;
+                    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
+                    classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px;
+                    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
+                    classDef core fill:#5b21b6,stroke:#a78bfa,stroke-width:2px;
+                    
+                    class Internet,ISP1,ISP2,DDoS ext;
+                    class TGW,CloudLB,K8s,CloudDB,SaaS cloud;
+                    class WAF,HQFW,ZTNA,SIEM security;
+                    class CoreA,CoreB core;
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Load Mermaid.js to render the graph dynamically -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+
+        // Toggle function exposed to window
+        window.showDiagram = function(type) {
+            // Update buttons
+            document.getElementById('btnStandard').classList.remove('active');
+            document.getElementById('btnLarge').classList.remove('active');
+            
+            // Update views
+            if(type === 'standard') {
+                document.getElementById('btnStandard').classList.add('active');
+                document.getElementById('standard-diagram').classList.add('active');
+                document.getElementById('large-diagram').classList.remove('active');
+            } else {
+                document.getElementById('btnLarge').classList.add('active');
+                document.getElementById('large-diagram').classList.add('active');
+                document.getElementById('standard-diagram').classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

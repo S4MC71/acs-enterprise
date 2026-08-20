@@ -1,350 +1,186 @@
-# 🏢 Nexus Global Enterprise — Penetration Testing Lab
+# 🏢 Nexus Global Enterprise — Penetration Testing & Network Architecture Lab
 
-> **A fully realistic, Docker-based Large Enterprise Network simulation for cybersecurity education and penetration testing practice.**
+> **A fully realistic, Docker-based Enterprise Network simulation for cybersecurity education, penetration testing practice, and network architecture exploration.**
 
-Based on the **Large Enterprise Network** architecture (`enterprise-network.html`), this lab simulates a real corporate environment with 33 containers across 9 network zones — supporting Black-Box, Gray-Box, and White-Box testing scenarios.
-
----
-
-## 📋 Requirements
-
-### System Requirements
-
-| Mode | Containers | Minimum RAM | Recommended RAM |
-|:---|:---|:---|:---|
-| Standard Lab (core) | 14 | 4 GB free | 6 GB |
-| Large Enterprise | 28 | 8 GB free | 12 GB |
-| Full (all profiles) | 33 | 10 GB free | 16 GB |
-
-### Software Requirements
-
-| Tool | Version | Notes |
-|:---|:---|:---|
-| **Docker Desktop** | 4.x+ | Windows / macOS / Linux |
-| **Docker Compose** | v2.x+ | Bundled with Docker Desktop |
-| **Git** | Any | To clone the repository |
-| **PowerShell** | 5.1+ (Windows) or 7+ | For `.ps1` scripts |
-| **WSL2** (Windows only) | Enabled | Required for WireGuard/ZTNA containers |
-
-> ⚠️ **WSL2 Required on Windows** for the `enterprise` profile — needed by WireGuard-based ZTNA and Branch SD-WAN containers. Enable it via: `wsl --install`
+Explore the live interactive topology map anytime by opening [**`enterprise-network.html`**](./enterprise-network.html) in your browser!
 
 ---
 
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/S4MC71/acs-enterprise.git
-cd acs-enterprise/lab
-```
-
-### 2. Start the Lab (Windows)
+## ⚡ Quick Launch Cheatsheet
 
 ```powershell
-# Interactive mode — shows a menu to select lab size
-.\scripts\start-lab.ps1
+cd lab
 
-# Or specify mode directly:
-.\scripts\start-lab.ps1 -Mode core          # Standard Lab (~4GB RAM)
-.\scripts\start-lab.ps1 -Mode enterprise    # Large Enterprise (~8GB RAM)
-.\scripts\start-lab.ps1 -Mode all           # Full Lab with Cloud (~12GB RAM)
-```
+# 1. Start Lab in your desired mode:
+.\scripts\start-lab.ps1 -Mode core          # 🛡️ Mode 1: Standard Lab (13 containers, ~4GB RAM)
+.\scripts\start-lab.ps1 -Mode enterprise    # 🏢 Mode 2: Advanced Enterprise (28 containers, ~8GB RAM)
+.\scripts\start-lab.ps1 -Mode all           # ☁️ Mode 3: Full Hybrid Cloud (33 containers, ~12GB RAM)
 
-### 3. Start the Lab (Linux / macOS)
-
-```bash
-chmod +x scripts/start-lab.sh
-./scripts/start-lab.sh
-```
-
-### 4. Verify All Containers are Running
-
-**Windows:**
-```powershell
+# 2. Check which containers are running vs stopped:
 .\scripts\check-health.ps1
+
+# 3. Stop or Reset:
+docker compose --profile core --profile enterprise --profile cloud down  # Stop (preserves data)
+.\scripts\reset-lab.ps1                                                # Full Wipe & Reset
 ```
-
-**Linux / macOS / WSL:**
-```bash
-./scripts/check-health.sh
-```
-
-### 5. Stop the Lab
-
-**Windows:**
-```powershell
-# Stop all profiles (preserves data volumes)
-docker compose --profile core --profile enterprise --profile cloud down
-
-# Full reset — removes ALL containers, networks, and volumes
-.\scripts\reset-lab.ps1
-```
-
-**Linux / macOS / WSL:**
-```bash
-# Full reset — removes ALL containers, networks, and volumes
-./scripts/reset-lab.sh
-```
+*(Linux / macOS users: use `./scripts/start-lab.sh` and `./scripts/check-health.sh`)*
 
 ---
 
-## 🌐 Network Architecture
-
-```
-[Internet / WAN]
-  198.51.100.0/24  — ISP1 (Primary)
-  203.0.113.0/24   — ISP2 (Secondary / Failover)
-         │
-  DDoS Scrubbing Center ──→ Dual BGP Edge Routers
-         │
-[DMZ — 10.0.1.0/24]
-  10.0.1.10   Nginx WAF / Reverse Proxy  (port 80 → host)
-  10.0.1.20   Corporate Web Portal       (Flask — login required)
-  10.0.1.30   Email Server (MailHog)     (port 8025 → host)
-  10.0.1.40   SSH Bastion / Jump Host    (port 2222 → host)
-  10.0.1.50   ZTNA / VPN Gateway         (WireGuard + ZTNA portal)
-         │
-[Core Backbone — 10.0.2.0/24]
-  10.0.2.10   Active Directory DC        (Samba4 / SMB / LDAP)
-  10.0.2.15   NAC Server (ISE/ClearPass) (port 8100)
-  10.0.2.20   Prometheus NMS
-  10.0.2.21   Grafana Dashboard          (port 3000 → host)
-  10.0.2.99   SIEM / Syslog Collector
-         │
-[Data Center — 10.0.3.0/24]
-  10.0.3.10   ERP Intranet               (port 8000)
-  10.0.3.20   PostgreSQL DB              (CROWN JEWELS)
-  10.0.3.30   MinIO SAN Primary          (port 9001)
-  10.0.3.35   MinIO SAN DR/Backup
-  10.0.3.241  DC Spine Switch 1
-  10.0.3.242  DC Spine Switch 2
-  10.0.3.243  DC Leaf Switch 1
-  10.0.3.244  DC Leaf Switch 2
-         │
-[Campus — 10.0.4.0/24]
-  10.0.4.10   HR Workstation             (sjenkins)
-  10.0.4.20   DevOps Workstation         (tahmed)
-  10.0.4.50   VoIP PBX (Asterisk)       (SIP port 5060)
-  10.0.4.60   IP Camera Server (RTSP)   (port 8554 / 8888)
-  10.0.4.70   IoT Device (MQTT)         (port 1883)
-         │
-[Branch Office — 10.0.5.0/24]
-  10.0.5.1    Branch SD-WAN Edge
-  10.0.5.10   Branch Employee PC         (ibrahim)
-
-[Cloud Tier — 172.16.0.0/24]  (--profile cloud)
-  172.16.0.1   Cloud Transit Gateway
-  172.16.0.10  Cloud Load Balancer (HAProxy)
-  172.16.0.20  Cloud Microservice (SSRF vuln)  (port 8090 → host)
-  172.16.0.30  Cloud DB (PostgreSQL RDS sim)
-  172.16.0.40  SaaS SSO Portal (SAML/OAuth2)   (port 8443 → host)
-```
+## 🗺️ Lab Modes Breakdown (কী কী এভেইলেবল আছে মোড অনুযায়ী)
 
 ---
 
-## 🔑 Access Points & Credentials
+### 🛡️ MODE 1: Standard Infrastructure (`core`)
+> **Hardware:** 13 Containers | ~4 GB RAM  
+> **Command:** `.\scripts\start-lab.ps1 -Mode core`  
+> **Focus:** Web Application Security, WAF Evasion, SQLi, Command Injection, Active Directory Enumeration, Database Crown Jewels.
 
-### Web Interfaces (access from browser)
-
-| URL | Description | Credentials |
-|:---|:---|:---|
-| `http://localhost:80` | Corporate Web Portal | `admin` / `NexusTechAdmin2026!` |
-| `http://localhost:8025` | Corporate Webmail (MailHog) | None required |
-| `http://localhost:3000` | Grafana NMS Dashboard | `nexus_nms_admin` / `NMS@Nexus2026!` |
-| `http://localhost:8090` | Cloud Microservice API | None (JWT required for some endpoints) |
-| `http://localhost:8443` | SaaS SSO Portal | Domain credentials |
-| `http://localhost:8888` | IP Camera HLS Stream | None (unauthenticated) |
-| `http://localhost:9001` | MinIO SAN Console | `nexus_san_root` / `SuperS3cUr3_B4ckup_Vault_Pass_2026!` |
-
-### SSH / Container Access
-
-```bash
-# Pentest Box (Black-Box entry)
-# Use your own local Kali Linux / WSL environment
-# See docs/attacker_tools_guide.md for setup
-
-# SSH Bastion (from host)
-ssh devops-remote@localhost -p 2222
-# Password: devops-remote@123
-
-# DevOps Workstation (Gray-Box entry)
-docker exec -it nexus-pc-dev-01 bash
-# User: tahmed | Password: DevOpsP@ss2026!
-
-# HR Workstation (Gray-Box entry)
-docker exec -it nexus-pc-hr-01 bash
-# User: sjenkins | Password: HrDirector9921!
-
-# Branch PC
-docker exec -it nexus-branch-pc-01 bash
-# User: ibrahim | Password: Branch@2026
-
-# Blue-Team / SIEM Analysis
-docker exec -it nexus-corp-siem-soc bash
-# tail -f /var/log/nexus-syslog/nexus-all.log
-```
-
-### RTSP Camera Streams
-
-```bash
-# View via VLC: Media > Open Network Stream
-rtsp://localhost:8554/nexus-lobby         # Lobby Camera
-rtsp://localhost:8554/nexus-serverroom   # Server Room Camera
-
-# HLS (browser)
-http://localhost:8888/nexus-lobby/index.m3u8
-```
-
-### VoIP / SIP
-
-```
-PBX: localhost:5060 (UDP/TCP)
-Extension 1003 — Tanvir Ahmed (weak password: 1234)  ← brute-force target
-```
-
-### MQTT IoT
-
-```bash
-# Subscribe to all topics (from pentest box)
-mosquitto_sub -h 10.0.4.70 -t '#' -v
-```
-
----
-
-## 🎯 Pentesting Modes
-
-### Black-Box (No prior knowledge)
-Read `docs/attacker_tools_guide.md` to setup your environment.
-```bash
-# From your own pentest machine:
-nmap -sS -sV -p 80,22,8025 198.51.100.10
-```
-
-### Gray-Box (Limited knowledge)
-```bash
-# DevOps role — knows some internal IPs
-docker exec -it nexus-pc-dev-01 bash
-
-# HR role — finds credentials in documents
-docker exec -it nexus-pc-hr-01 bash
-```
-
-### White-Box / Blue-Team (Full visibility)
-```bash
-docker exec -it nexus-corp-siem-soc bash
-tail -f /var/log/nexus-syslog/nexus-all.log
-cat /var/log/nexus-alerts/firewall-blocks.log
-cat /var/log/nexus-alerts/auth-failures.log
-```
-
----
-
-## 🚩 CTF Flags (6 Total)
-
-| # | Difficulty | Attack Path | Flag |
+#### 🌐 1. Browser Web Applications (সরাসরি ব্রাউজারে ওপেন করুন)
+| Application | URL | Role & Description | Default Credentials |
 |:---|:---|:---|:---|
-| 1 | 🟢 Easy | SQL Injection on `/?track_id=` | `FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026}` |
-| 2 | 🟡 Medium | Command Injection in Ping Tool | `FLAG{CMD_INJ3CT10N_PORTAL_COMPR0M1S3D}` |
-| 3 | 🔴 Hard | PostgreSQL DB → `system_vault_keys` | `FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}` |
-| 4 | 🔴 Hard | Cloud SSRF → `/api/v1/secrets` | `FLAG{CL0UD_T13R_C0MPR0M1S3D_AWS_NEXUS_2026!}` |
-| 5 | 🟡 Medium | SaaS SSO credential stuffing | `FLAG{SAAS_SS0_C0RPO_ID3NT1TY_BYPASSD_2026}` |
-| 6 | 🟢 Easy | NAC MAC bypass `/api/bypass` | `FLAG{NAC_M4C_BYPA55_802_1X_C1RC_UMVENT3D_2026}` |
+| **Corporate Web Portal** | [`http://localhost:80`](http://localhost:80) | Customer tracking & shipping portal (behind Nginx WAF). Contains SQLi & Admin Command Injection. | `admin` / `NexusTechAdmin2026!` |
+| **MailHog Webmail** | [`http://localhost:8025`](http://localhost:8025) | Webmail inbox capturing all internal corporate emails, notifications, and password resets. | *No password required* |
+| **MinIO Primary SAN** | [`http://localhost:9001`](http://localhost:9001) | S3-compatible primary storage SAN console. | `nexus_san_root` / `SuperS3cUr3_B4ckup_Vault_Pass_2026!` |
 
----
+#### 🔌 2. CLI & Network Services (টার্মিনাল / ডেডিকেটেড টুলস দিয়ে টেস্ট করুন)
+| Service | Access Command / Method | Port / Protocol | Details |
+|:---|:---|:---|:---|
+| **SSH Bastion Jump Host** | `ssh devops-remote@localhost -p 2222` | Port `2222` (SSH) | Password: `devops-remote@123`<br>*(Pivot point into Core & Campus subnets)* |
+| **PostgreSQL Crown Jewels** | `docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod` | Port `5432` (Postgres) | User: `nexus_admin`<br>Pass: `Nexu$$Prod2026!Sec`<br>*(Contains `system_vault_keys` table with Flag 3)* |
+| **Active Directory DC** | `smbclient -L //10.0.2.10 -N` | Port `445` (SMB), `389` (LDAP) | Admin: `Administrator` / `NexusAD2026!Admin`<br>*(Unauthenticated SMB share leaks DB script)* |
+| **SIEM / SOC Collector** | `docker exec -it nexus-corp-siem-soc bash` | Port `514` (Syslog) | Blue-Team log analysis: `tail -f /var/log/nexus-syslog/nexus-all.log` |
+| **Internal ERP Intranet** | Internal access: `http://10.0.3.10:8000` | Port `8000` (HTTP) | Internal corporate financial and payroll web service |
 
-## 📁 Project Structure
-
-```
-acs-enterprise/
-├── README.md                       # Main repository README
-├── enterprise-network.html         # Architecture diagram (do not modify)
-├── AI_AGENT_CONTEXT.md             # AI agent handover context
-└── lab/
-    ├── README.md                   # Lab specific documentation
-    ├── docker-compose.yml          # 33 containers, 3 profiles, 9 subnets
-    ├── scripts/
-    │   ├── start-lab.ps1           # Windows launcher (interactive menu)
-    │   ├── start-lab.sh            # Linux/macOS launcher
-    │   ├── check-health.ps1        # Health check (all 33 containers)
-    │   ├── check-health.sh         # Health check (bash)
-    │   ├── reset-lab.ps1           # Full reset (Windows)
-    │   └── reset-lab.sh            # Full reset (Linux/macOS)
-    ├── apps/
-    │   ├── corp-web/               # Corporate portal (Flask)
-    │   └── internal-erp/           # ERP intranet (Flask)
-    └── config/
-        ├── attacker/               # Kali-style pentest box (Debian)
-        ├── edge-router/            # BGP Edge Router (Alpine)
-        ├── isp2-router/            # ISP2 secondary (Alpine)
-        ├── ddos-proxy/             # DDoS scrubbing (Nginx)
-        ├── hq-firewall/            # NGFW (Alpine + iptables)
-        ├── nginx-waf/              # WAF proxy config
-        ├── bastion/                # SSH jump host (Alpine)
-        ├── ztna-gateway/           # WireGuard ZTNA (Alpine)
-        ├── samba-ad/               # Active Directory (Samba4)
-        ├── syslog-server/          # SIEM collector (rsyslog)
-        ├── nac-server/             # NAC simulation (Flask)
-        ├── nms/                    # Prometheus config
-        ├── dc-fabric/              # Spine + Leaf switches
-        ├── database/               # PostgreSQL init.sql
-        ├── branch-office/          # SD-WAN + Branch PC
-        ├── voip/                   # Asterisk PBX
-        ├── iot/                    # MQTT IoT device
-        ├── ipcam/                  # MediaMTX RTSP cameras
-        ├── workstations/           # HR + DevOps workstations
-        └── cloud-tier/             # Cloud app, gateway, DB, SaaS SSO
-```
-
----
-
-## 🛠️ Troubleshooting
-
-### Build Fails — Network/Download Issues
+#### 💻 3. Gray-Box Workstations (এমপ্লয়ি পিসিতে সরাসরি শেল এক্সেস)
 ```bash
-# Build without cache
-docker compose --profile core build --no-cache
+# DevOps Engineer Workstation (tahmed) — has Docker access, git history, SSH keys:
+docker exec -it nexus-pc-dev-01 bash     # Credentials: tahmed / DevOpsP@ss2026!
+
+# HR Director Workstation (sjenkins) — contains employee rosters & salary documents:
+docker exec -it nexus-pc-hr-01 bash      # Credentials: sjenkins / HrDirector9921!
 ```
 
-### Container Immediately Exits
-```bash
-docker compose logs nexus-<container-name>
-```
-
-### Port Already in Use
-```bash
-# Check what is using port 80
-netstat -ano | findstr :80      # Windows
-lsof -i :80                     # Linux/macOS
-```
-
-### Low RAM — Start Core Only
-```powershell
-.\scripts\start-lab.ps1 -Mode core
-```
-
-### WireGuard Fails on Windows
-Ensure WSL2 is enabled:
-```powershell
-wsl --install
-wsl --set-default-version 2
-```
-
-### Full Reset
-```powershell
-.\scripts\reset-lab.ps1
-# Then rebuild:
-.\scripts\start-lab.ps1
-```
+#### 🚩 4. CTF Flags in Mode 1
+- 🟢 **Flag 1 (SQLi):** `FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026}` — Found on Web Portal `/?track_id=`
+- 🟡 **Flag 2 (CMDi):** `FLAG{CMD_INJ3CT10N_PORTAL_COMPR0M1S3D}` — Found in Web Admin `/admin/server-check`
+- 🔴 **Flag 3 (Crown Jewels):** `FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}` — Found in PostgreSQL `system_vault_keys`
 
 ---
 
-## 📖 Additional Documentation
+### 🏢 MODE 2: Advanced Enterprise (`enterprise`)
+> **Hardware:** 28 Containers | ~8 GB RAM  
+> **Command:** `.\scripts\start-lab.ps1 -Mode enterprise`  
+> **Focus:** Includes **EVERYTHING in Mode 1** + Dual ISP BGP, DDoS Scrubbing, WireGuard ZTNA, VoIP PBX, CCTV RTSP, IoT MQTT, NAC 802.1X, Spine-Leaf Fabric & Branch SD-WAN.
 
-- `docs/student-lab-guide.md` — Step-by-step exercises for students
-- `docs/instructor-walkthrough.md` — Full attack path solutions
-- `docs/network-topology-map.md` — Detailed network diagram
+#### 🌐 1. New Browser Web Applications (Mode 1 এর সাথে নতুন যুক্ত হবে)
+| Application | URL | Role & Description | Default Credentials |
+|:---|:---|:---|:---|
+| **Grafana NMS Dashboard** | [`http://localhost:3000`](http://localhost:3000) | Real-time network telemetry, switch load, Prometheus metrics, and bandwidth monitor. | `nexus_nms_admin` / `NMS@Nexus2026!` *(Anonymous Viewer enabled)* |
+| **DDoS Scrubbing Center** | [`http://localhost:8080`](http://localhost:8080) | Nginx traffic rate-limiting and DDoS mitigation proxy (simulates Cloudflare / Akamai). | *Public proxy endpoint* |
+| **CCTV Camera Web Player** | [`http://localhost:8888`](http://localhost:8888) | Live in-browser HLS video surveillance player streaming from campus cameras. | *No password required* |
+| **MinIO DR Backup SAN** | [`http://localhost:9003`](http://localhost:9003) | Disaster recovery secondary backup vault console. | `nexus_dr_admin` / `DRBackup_Nexus@2026!` |
+
+#### 🔌 2. New Network Protocols & Dedicated Services
+| Service | Access Command / Method | Port / Protocol | Details |
+|:---|:---|:---|:---|
+| **Asterisk VoIP PBX** | Connect via Softphone (Zoiper/Linphone) or `svcrack` | Port `5060` (SIP UDP/TCP) | Exts: `1001`, `1002`, `1003` (Pass: `1234`)<br>Conference Room: `9000` *(Eavesdropping)* |
+| **CCTV RTSP Video Stream** | Open in VLC: `rtsp://localhost:8554/nexus-lobby`<br>or `rtsp://localhost:8554/nexus-serverroom` | Port `8554` (RTSP) | Unauthenticated live surveillance camera feeds |
+| **Campus IoT MQTT Broker** | `mosquitto_sub -h localhost -p 1883 -t '#'` | Port `1883` (MQTT) | Unauthenticated broker leaking DC IP alerts |
+| **NAC ISE Server (802.1X)** | `curl http://10.0.2.15:8100/api/bypass` | Port `8100` (HTTP API) | Cisco ISE simulation (Vulnerable to MAC Bypass) |
+| **WireGuard ZTNA Gateway** | WireGuard client on port `51820/udp` | Port `51820` (UDP), `8443` | Encrypted Zero-Trust remote worker VPN |
+| **DC Spine-Leaf Fabric** | 4 Switch containers (`dc-spine-1/2`, `dc-leaf-1/2`) | BGP-EVPN / VXLAN | Non-blocking 100GbE Data Center switching fabric |
+
+#### 💻 3. New Branch Office Workstation
+```bash
+# Dhaka Regional Branch Employee PC (ibrahim) — contains WireGuard config & key leak:
+docker exec -it nexus-branch-pc-01 bash   # Credentials: ibrahim / Branch@2026
+```
+
+#### 🚩 4. New CTF Flag in Mode 2
+- 🟢 **Flag 6 (NAC Bypass):** `FLAG{NAC_M4C_BYPA55_802_1X_C1RC_UMVENT3D_2026}` — Found on NAC Server `/api/bypass`
 
 ---
 
-> 🔒 **For educational purposes only.** All vulnerabilities are intentional and contained within the lab environment. Do not expose lab ports to the public internet.
+### ☁️ MODE 3: Full Hybrid Cloud (`all`)
+> **Hardware:** 33 Containers | ~12 GB RAM  
+> **Command:** `.\scripts\start-lab.ps1 -Mode all`  
+> **Focus:** Includes **EVERYTHING in Mode 1 & 2** + AWS/Azure Cloud VPC Peering, Transit Gateway, Cloud Load Balancer, SSRF-vulnerable Microservices, Cloud RDS PostgreSQL, and SaaS SSO.
+
+#### 🌐 1. New Cloud Browser Web Applications (Mode 1 & 2 এর সাথে নতুন যুক্ত হবে)
+| Application | URL | Role & Description | Default Credentials |
+|:---|:---|:---|:---|
+| **Cloud Microservice API** | [`http://localhost:8090`](http://localhost:8090) | Kubernetes-style cloud microservice API. Vulnerable to Server-Side Request Forgery (`/api/v1/fetch?url=`). | Endpoints: `/api/v1/config`, `/api/v1/health` |
+| **SaaS SSO Identity Portal** | [`https://localhost:8443`](https://localhost:8443) | Corporate SAML/OAuth2 Single Sign-On Identity Portal. Target for auth bypass. | Use corporate employee domain credentials |
+
+#### 🔌 2. New Cloud Infrastructure Services
+| Service | Access / Role | Subnet / IP | Details |
+|:---|:---|:---|:---|
+| **Cloud Transit Gateway** | AWS TGW / Azure VNet Peering | `172.16.0.1` / `10.0.3.251` | Secure peering bridge between on-prem Data Center and Cloud VPC |
+| **Cloud Load Balancer** | HAProxy Application Load Balancer | `172.16.0.10` | Distributes cloud traffic to microservice pods |
+| **Cloud Managed RDS DB** | PostgreSQL Cloud Database | `172.16.0.30:5432` | User: `nexus_rds_admin`<br>Pass: `RdsNexusProd@2026!Cloud` (DB: `nexus_cloud_prod`) |
+
+#### 🚩 3. New CTF Flags in Mode 3
+- 🔴 **Flag 4 (Cloud SSRF):** `FLAG{CL0UD_T13R_C0MPR0M1S3D_AWS_NEXUS_2026!}` — Found in Cloud Microservice `/api/v1/secrets`
+- 🟡 **Flag 5 (SaaS SSO):** `FLAG{SAAS_SS0_C0RPO_ID3NT1TY_BYPASSD_2026}` — Found in SaaS SSO `/dashboard`
+
+---
+
+## 📊 Mode Comparison Matrix (একনজরে সব মোড)
+
+| Feature / Service | Mode 1: `core` (13) | Mode 2: `enterprise` (28) | Mode 3: `all` (33) |
+|:---|:---:|:---:|:---:|
+| **Corporate Web Portal (`:80`)** | ✅ Active | ✅ Active | ✅ Active |
+| **MailHog Webmail (`:8025`)** | ✅ Active | ✅ Active | ✅ Active |
+| **MinIO Primary Storage (`:9001`)** | ✅ Active | ✅ Active | ✅ Active |
+| **SSH Bastion (`:2222`)** | ✅ Active | ✅ Active | ✅ Active |
+| **PostgreSQL Crown Jewels DB** | ✅ Active | ✅ Active | ✅ Active |
+| **Active Directory Samba4 DC** | ✅ Active | ✅ Active | ✅ Active |
+| **DevOps & HR Workstations** | ✅ Active | ✅ Active | ✅ Active |
+| **Grafana NMS Telemetry (`:3000`)** | ❌ Off | ✅ Active | ✅ Active |
+| **DDoS Scrubbing Proxy (`:8080`)** | ❌ Off | ✅ Active | ✅ Active |
+| **CCTV Camera Web & RTSP (`:8888`, `:8554`)** | ❌ Off | ✅ Active | ✅ Active |
+| **Asterisk VoIP PBX (`:5060`)** | ❌ Off | ✅ Active | ✅ Active |
+| **Campus IoT MQTT Broker (`:1883`)** | ❌ Off | ✅ Active | ✅ Active |
+| **NAC ISE Server (`:8100`)** | ❌ Off | ✅ Active | ✅ Active |
+| **Spine-Leaf Fabric & Branch SD-WAN** | ❌ Off | ✅ Active | ✅ Active |
+| **Cloud Microservice API (`:8090`)** | ❌ Off | ❌ Off | ✅ Active |
+| **SaaS SSO Identity Portal (`:8443`)** | ❌ Off | ❌ Off | ✅ Active |
+| **Cloud Transit Gateway & RDS DB** | ❌ Off | ❌ Off | ✅ Active |
+| **CTF Flags Available** | Flags 1, 2, 3 | Flags 1, 2, 3, 6 | Flags 1 to 6 (All) |
+
+---
+
+## 🛠️ File Locations for Future Customization (কোড বা কনফিগ মডিফাই করতে চাইলে)
+
+| Component | File Path | What You Can Modify |
+|:---|:---|:---|
+| **Corporate Web Portal App** | [`lab/apps/corp-web/`](./lab/apps/corp-web/) | Flask Python code, HTML templates, SQL queries, CTF flags |
+| **Internal ERP Financial App** | [`lab/apps/internal-erp/`](./lab/apps/internal-erp/) | ERP payroll portal logic & DB connections |
+| **Cloud Microservice App** | [`lab/config/cloud-tier/cloud-app/`](./lab/config/cloud-tier/cloud-app/) | SSRF endpoints & JWT authentication logic |
+| **SaaS SSO Portal App** | [`lab/config/cloud-tier/saas-mock/`](./lab/config/cloud-tier/saas-mock/) | SAML/OAuth2 login pages & credential rules |
+| **Nginx WAF Proxy** | [`lab/config/nginx-waf/nginx.conf`](./lab/config/nginx-waf/nginx.conf) | Reverse proxy routing & rate limiting |
+| **PostgreSQL Database** | [`lab/config/database/init.sql`](./lab/config/database/init.sql) | Initial tables, sample financial data & crown jewel keys |
+| **Firewall iptables** | [`lab/config/hq-firewall/`](./lab/config/hq-firewall/) | Inter-VLAN routing, drop/accept rules, NAT |
+| **VoIP Asterisk PBX** | [`lab/config/voip/`](./lab/config/voip/) | SIP user accounts, extensions & conference rooms |
+| **Prometheus Metrics** | [`lab/config/nms/prometheus.yml`](./lab/config/nms/prometheus.yml) | Scrape intervals and target hostnames |
+| **Master Compose Blueprint** | [`lab/docker-compose.yml`](./lab/docker-compose.yml) | Subnet IP allocations, port forwards & container profiles |
+
+> **💡 Quick Hot-Reload Tip:**  
+> কোনো ফাইল এডিট করার পর পুরো ল্যাব বন্ধ না করে শুধু ওই কন্টেইনারটি রিস্টার্ট করুন:  
+> `docker compose restart <container-name>` *(e.g. `docker compose restart corp-web-portal`)*
+
+---
+
+## 🔧 Troubleshooting & FAQ
+
+- **Q: `check-health.ps1` এ কিছু কন্টেইনার gray (not deployed) দেখাচ্ছে কেন?**  
+  **A:** এটি সম্পূর্ণ স্বাভাবিক। আপনি যদি `core` মোড চালু করেন, তবে Enterprise ও Cloud কন্টেইনারগুলো বন্ধ থাকবে। সবগুলো একসাথে চালাতে `.\scripts\start-lab.ps1 -Mode all` ব্যবহার করুন।
+- **Q: পোর্টে কনফ্লিক্ট দেখালে কী করব? (e.g. Port 80 already in use)**  
+  **A:** `netstat -ano | findstr :80` দিয়ে চেক করুন আপনার সিস্টেমে IIS বা অন্য কোনো ওয়েব সার্ভার পোর্ট 80 দখল করে রেখেছে কিনা।
+- **Q: WireGuard বা ZTNA কন্টেইনারে এরর দিলে কী করব?**  
+  **A:** Windows ব্যবহারকারীদের WSL2 ব্যাকএন্ড নিশ্চিত করতে হবে (`wsl --set-default-version 2`)।
+
+---
+
+> 🔒 **Educational Notice:** This lab is strictly intended for educational, cybersecurity training, and defensive research. All vulnerabilities are contained within isolated Docker bridge networks.

@@ -3,439 +3,1565 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Network Architecture</title>
-    <!-- Importing a beautiful font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Nexus Global Enterprise — Network Architecture Explorer</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-color: #0f172a;
-            --text-color: #f8fafc;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --accent-color: #3b82f6;
+            --bg-main: #0a0f1d;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-glow: rgba(56, 189, 248, 0.25);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-cyan: #38bdf8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --accent-amber: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 3rem 1rem;
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            overflow-x: hidden;
             background-image: 
-                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.25) 0, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(112, 26, 117, 0.2) 0, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.8) 0, transparent 70%);
             background-attachment: fixed;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            animation: fadeInDown 0.8s ease-out;
+        /* App Header HUD */
+        header.cyber-header {
+            width: 100%;
+            padding: 1.25rem 2rem;
+            background: rgba(10, 15, 29, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .brand-title h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #60a5fa, #c084fc, #38bdf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        p.subtitle {
-            color: #94a3b8;
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto 1.5rem auto;
-            line-height: 1.6;
-        }
-
-        .controls {
             display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        button {
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
+        .brand-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            border-radius: 6px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .brand-title p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Mode Selector Buttons */
+        .mode-nav {
+            display: flex;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.3rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            gap: 0.25rem;
+        }
+
+        .mode-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 0.6rem 1.1rem;
+            border-radius: 9px;
             font-family: 'Inter', sans-serif;
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        button:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        .mode-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        button.active {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        .mode-btn.active {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         }
 
-        .diagram-container {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 2rem;
+        .mode-btn .count-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.45rem;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 20px;
+            color: #e0e7ff;
+        }
+
+        /* Metrics Bar */
+        .hud-metrics {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .metric-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        /* Control Toolbar */
+        .control-bar {
             width: 100%;
-            max-width: 1400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            overflow-x: auto;
-            animation: fadeIn 1s ease-out 0.3s both;
-            display: grid;
-            place-items: center;
+            max-width: 1500px;
+            margin: 1rem auto 0 auto;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
         }
 
-        .mermaid-diagram {
-            grid-column: 1;
-            grid-row: 1;
+        /* Search input */
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+            max-width: 380px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 1rem 0.6rem 2.4rem;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .search-shortcut {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.35rem;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* Zone Filter Pills */
+        .zone-pills {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .pill-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .pill-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .pill-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Floating Interactive Canvas Controls */
+        .canvas-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .action-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+        }
+
+        /* Main Workspace Container */
+        .workspace-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto 1.5rem auto;
+            padding: 0 1.5rem;
+            display: flex;
+            gap: 1.5rem;
+            height: calc(100vh - 180px);
+            min-height: 600px;
+        }
+
+        /* Diagram Viewport & PanZoom Stage */
+        .viewport-stage {
+            position: relative;
+            flex: 1;
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+            cursor: grab;
+            user-select: none;
+        }
+
+        .viewport-stage:active {
+            cursor: grabbing;
+        }
+
+        /* Pan & Zoom Panes - Always in DOM with absolute positioning and opacity */
+        .panzoom-pane {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             opacity: 0;
             pointer-events: none;
-            width: 100%;
-            transition: opacity 0.5s ease-out;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .mermaid-diagram.active {
+        .panzoom-pane.active {
             opacity: 1;
             pointer-events: auto;
+            visibility: visible;
         }
 
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .mermaid-canvas {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            transform-origin: center center;
+            transition: transform 0.05s ease-out;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
+        .mermaid-canvas svg {
+            max-width: none !important;
+            height: auto !important;
+            filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
         }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        /* SVG Node Interactive Enhancements */
+        .mermaid-canvas .node {
+            cursor: pointer !important;
+            transition: transform 0.2s ease, filter 0.2s ease, opacity 0.3s ease;
+        }
+
+        .mermaid-canvas .node:hover {
+            filter: brightness(1.25) drop-shadow(0 0 10px rgba(56, 189, 248, 0.6)) !important;
+        }
+
+        .mermaid-canvas .node.highlighted {
+            opacity: 1 !important;
+            filter: brightness(1.4) drop-shadow(0 0 18px #f59e0b) !important;
+            animation: pulse-glow 1.5s infinite alternate;
+        }
+
+        .mermaid-canvas .node.dimmed {
+            opacity: 0.2 !important;
+            filter: grayscale(80%) !important;
+        }
+
+        @keyframes pulse-glow {
+            from { filter: brightness(1.3) drop-shadow(0 0 12px #f59e0b); }
+            to { filter: brightness(1.6) drop-shadow(0 0 24px #ef4444); }
+        }
+
+        /* Floating Tool HUD on Canvas */
+        .canvas-hud-overlay {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.4rem;
+            display: flex;
+            gap: 0.3rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+
+        .canvas-hud-overlay button {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .canvas-hud-overlay button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .canvas-hud-overlay .hud-divider {
+            width: 1px;
+            background: var(--border-subtle);
+            margin: 4px 2px;
+        }
+
+        .zoom-level-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            padding: 0 0.5rem;
+            user-select: none;
+        }
+
+        /* Node Inspector Side Drawer */
+        .inspector-drawer {
+            position: fixed;
+            top: 0;
+            right: -480px;
+            width: 450px;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-glow);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .inspector-drawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            background: rgba(30, 41, 59, 0.4);
+        }
+
+        .drawer-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .node-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid var(--border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+        }
+
+        .node-titles h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .node-titles p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+        }
+
+        .drawer-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .drawer-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .drawer-body {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .drawer-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .meta-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .meta-title {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .meta-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.825rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .copy-pill {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 6px;
+            color: var(--accent-cyan);
+            transition: all 0.2s;
+        }
+
+        .copy-pill:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .terminal-block {
+            background: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #38bdf8;
+            position: relative;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .terminal-block .btn-copy-code {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .terminal-block .btn-copy-code:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .badge-tag.zone { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-tag.vuln { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        /* Toast notification */
+        .toast-msg {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 200;
+            pointer-events: none;
+        }
+
+        .toast-msg.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Legend strip */
+        .legend-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            margin-right: 0.4rem;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Enterprise Network Architecture</h1>
-        <p class="subtitle">Switch between standard and a highly complex, large-scale enterprise network.</p>
-        <div class="controls">
-            <button id="btnStandard" class="active" onclick="showDiagram('standard')">Standard Network</button>
-            <button id="btnLarge" onclick="showDiagram('large')">Large Enterprise Network</button>
+    <!-- Cyber Header HUD -->
+    <header class="cyber-header">
+        <div class="brand-group">
+            <div class="brand-logo">🌐</div>
+            <div class="brand-title">
+                <h1>Nexus Global Enterprise <span class="brand-badge">Lab v3.0 Live</span></h1>
+                <p>Enterprise Network Architecture & Attack Surface Explorer</p>
+            </div>
+        </div>
+
+        <!-- Mode Navigation -->
+        <div class="mode-nav">
+            <button id="btnCore" class="mode-btn active" onclick="switchLabMode('core')">
+                🛡️ Standard Infrastructure <span class="count-badge">13 Nodes</span>
+            </button>
+            <button id="btnEnterprise" class="mode-btn" onclick="switchLabMode('enterprise')">
+                🏢 Advanced Enterprise <span class="count-badge">28 Nodes</span>
+            </button>
+            <button id="btnAll" class="mode-btn" onclick="switchLabMode('all')">
+                ☁️ Comprehensive Cloud <span class="count-badge">33 Nodes</span>
+            </button>
+        </div>
+
+        <!-- Lab Metrics -->
+        <div class="hud-metrics">
+            <div class="metric-item">
+                <span class="metric-label">Active Nodes</span>
+                <span id="metricNodes" class="metric-val">13</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Subnets</span>
+                <span id="metricSubnets" class="metric-val">5 / 9</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">CTF Flags</span>
+                <span id="metricFlags" class="metric-val">3 Flags</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Controls & Filters Toolbar -->
+    <div class="control-bar">
+        <!-- Search -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="nodeSearchInput" placeholder="Search node, IP, port, or vuln..." oninput="handleSearch(this.value)">
+            <span class="search-shortcut">/</span>
+        </div>
+
+        <!-- Zone Filters -->
+        <div class="zone-pills">
+            <button class="pill-btn active" onclick="filterByZone('ALL')">All Zones</button>
+            <button class="pill-btn" onclick="filterByZone('WAN')">WAN / ISPs</button>
+            <button class="pill-btn" onclick="filterByZone('DMZ')">DMZ</button>
+            <button class="pill-btn" onclick="filterByZone('Core')">Core Backbone</button>
+            <button class="pill-btn" onclick="filterByZone('DC')">Data Center</button>
+            <button class="pill-btn" onclick="filterByZone('Campus')">Campus LAN</button>
+            <button class="pill-btn" onclick="filterByZone('Branch')">Branch Office</button>
+            <button class="pill-btn" onclick="filterByZone('Cloud')">Cloud Tier</button>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="canvas-actions">
+            <button class="action-btn" title="Reset View" onclick="resetPanZoom()">🎯</button>
+            <button class="action-btn" title="Fit to Screen" onclick="fitToScreen()">📐</button>
+            <button class="action-btn" title="Toggle Fullscreen" onclick="toggleFullscreen()">⛶</button>
         </div>
     </div>
 
-    <div class="diagram-container">
+    <!-- Main Workspace Stage -->
+    <div class="workspace-container">
+        <div id="viewportStage" class="viewport-stage">
+            
+            <!-- Standard Core Diagram -->
+            <div id="core-pane" class="panzoom-pane active">
+                <div class="mermaid-canvas">
+                    <div id="core-mermaid" class="mermaid">
+
+flowchart TD
+    Internet(("🌐 Internet / WAN"))
+    
+    subgraph Perimeter ["Perimeter / Edge Layer"]
+        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
+    end
+    
+    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
+        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
+    end
+    
+    subgraph Core ["Core Backbone (10.0.2.0/24)"]
+        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
+        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
+    end
+    
+    subgraph DC ["Data Center (10.0.3.0/24)"]
+        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
+        ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
+        SAN[("💾 MinIO SAN<br/><code>10.0.3.30 :9001</code>")]
+    end
+    
+    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
+        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20 (tahmed)</code>"]
+        HRPC["💻 HR Workstation<br/><code>10.0.4.10 (sjenkins)</code>"]
+    end
+
+    Internet <==> EdgeRouter
+    EdgeRouter <--> HQFW
+    
+    HQFW <--> WAF
+    HQFW <--> MailServer
+    HQFW <--> Bastion
+    WAF <--> WebPortal
+    
+    HQFW <==> ADDC
+    HQFW <==> SIEM
+    
+    HQFW <==> ProdDB
+    HQFW <==> ERP
+    HQFW <==> SAN
+    
+    HQFW <==> DevPC
+    HQFW <==> HRPC
+
+    classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
+    classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
+    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px;
+    classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px;
+    
+    class ProdDB,SAN database;
+    class HQFW firewall;
+    class Internet internet;
+    class WebPortal,ERP,MailServer web;
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Enterprise Diagram -->
+            <div id="enterprise-pane" class="panzoom-pane">
+                <div class="mermaid-canvas">
+                    <div id="enterprise-mermaid" class="mermaid">
+
+flowchart TD
+    Internet(("🌐 Internet / WAN"))
+    
+    subgraph ISP ["ISPs & DDoS Scrubbing"]
+        ISP1["🌐 ISP 1 Primary<br/><code>198.51.100.0/24</code>"]
+        ISP2["🌐 ISP 2 Secondary<br/><code>203.0.113.0/24</code>"]
+        DDoS["🛡️ DDoS Scrubbing<br/><code>203.0.113.10 :8080</code>"]
+    end
+
+    subgraph Branch ["Branch Office LAN (10.0.5.0/24)"]
+        SDWANBranch["🔀 Branch SD-WAN<br/><code>10.0.5.1 / 203.0.113.50</code>"]
+        BranchPC["💻 Branch PC<br/><code>10.0.5.10 (ibrahim)</code>"]
+    end
+    
+    subgraph VPN ["VPN Clients (10.0.6.0/24)"]
+        VPNClients["🧑‍💻 Remote VPN Clients<br/><code>10.0.6.0/24 (WireGuard)</code>"]
+    end
+
+    Internet <==> DDoS
+    DDoS <==> ISP1
+    DDoS <==> ISP2
+    ISP2 <==> SDWANBranch
+    SDWANBranch --- BranchPC
+    VPNClients -.-> Internet
+
+    subgraph Perimeter ["HQ Perimeter / Edge"]
+        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        ISP2Router["🌐 ISP2 BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
+        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
+    end
+
+    ISP1 <==> EdgeRouter
+    ISP2 <==> ISP2Router
+    EdgeRouter <--> HQFW
+    ISP2Router <--> HQFW
+
+    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
+        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
+        ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+    end
+
+    HQFW <--> WAF
+    HQFW <--> MailServer
+    HQFW <--> Bastion
+    HQFW <--> ZTNA
+    WAF <--> WebPortal
+    VPNClients -.-> ZTNA
+
+    subgraph Core ["Core Backbone (10.0.2.0/24)"]
+        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
+        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
+        NAC["🛡️ NAC ISE Server<br/><code>10.0.2.15 :8100</code>"]
+        NMS["📈 NMS Grafana/Prom<br/><code>10.0.2.21 :3000</code>"]
+    end
+
+    HQFW <==> ADDC
+    HQFW <==> SIEM
+    HQFW <==> NAC
+    HQFW <==> NMS
+
+    subgraph DC ["DC Spine-Leaf Fabric (10.0.3.0/24)"]
+        Spine1["🔀 Spine Switch 1<br/><code>10.0.3.241</code>"]
+        Spine2["🔀 Spine Switch 2<br/><code>10.0.3.242</code>"]
+        Leaf1["🔀 Leaf Switch 1 (Compute)<br/><code>10.0.3.243</code>"]
+        Leaf2["🔀 Leaf Switch 2 (Storage)<br/><code>10.0.3.244</code>"]
         
-        <!-- ==============================
-             STANDARD NETWORK DIAGRAM
-        =============================== -->
-        <div id="standard-diagram" class="mermaid-diagram active">
-            <div class="mermaid">
-                %%{init: {
-                    'theme': 'base',
-                    'themeVariables': { 
-                        'fontFamily': 'Inter', 
-                        'primaryColor': '#1e293b', 
-                        'primaryTextColor': '#f8fafc', 
-                        'primaryBorderColor': '#3b82f6', 
-                        'lineColor': '#94a3b8', 
-                        'clusterBkg': 'rgba(15, 23, 42, 0.5)',
-                        'clusterBorder': '#475569'
-                    }
-                }}%%
-                flowchart TD
-                    Internet((🌐 Internet))
-                    subgraph Edge[Perimeter / Edge Layer]
-                        EdgeRouter[Edge Router]
-                        Firewall[Next-Gen Firewall]
-                        VPN[VPN Concentrator]
-                    end
-                    subgraph DMZ[DMZ - Public Facing]
-                        LoadBalancer[Load Balancer]
-                        WebServers[Web / App Servers]
-                    end
-                    subgraph Core[Core Layer - Backbone]
-                        CoreSwitch{Core Switch}
-                        SDWAN[SD-WAN Appliance]
-                    end
-                    subgraph DC[Data Center]
-                        DCSwitch[DC Aggregation Switch]
-                        SAN[(SAN / Storage)]
-                        DB[(Database Servers)]
-                        AD[Active Directory / DNS]
-                    end
-                    subgraph Distribution[Distribution Layer]
-                        DistSwitch1[Distribution Switch 1]
-                        DistSwitch2[Distribution Switch 2]
-                    end
-                    subgraph Access[Access Layer]
-                        AccessSwitch1[Access Switch 1]
-                        AccessSwitch2[Access Switch 2]
-                        WLC[Wireless LAN Controller]
-                    end
-                    subgraph Endpoints[Endpoints & Users]
-                        PC[🖥️ Desktop PCs]
-                        Printer[🖨️ Printers]
-                        AP1((📡 Wi-Fi AP))
-                        AP2((📡 Wi-Fi AP))
-                        Mobile[📱 Laptops & Phones]
-                    end
+        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
+        ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
+        SAN[("💾 MinIO Primary SAN<br/><code>10.0.3.30 :9001</code>")]
+        DRSAN[("💾 MinIO DR SAN<br/><code>10.0.3.35 :9003</code>")]
+        
+        Spine1 === Leaf1
+        Spine1 === Leaf2
+        Spine2 === Leaf1
+        Spine2 === Leaf2
+        
+        Leaf1 --- ProdDB
+        Leaf1 --- ERP
+        Leaf2 --- SAN
+        Leaf2 --- DRSAN
+    end
 
-                    Internet <==> EdgeRouter
-                    Internet <==> SDWAN
-                    EdgeRouter <--> Firewall
-                    EdgeRouter <--> VPN
-                    Firewall <--> LoadBalancer
-                    LoadBalancer <--> WebServers
-                    Firewall <==> CoreSwitch
-                    VPN --> CoreSwitch
-                    SDWAN <==> CoreSwitch
-                    CoreSwitch <==> DCSwitch
-                    DCSwitch <--> SAN
-                    DCSwitch <--> DB
-                    DCSwitch <--> AD
-                    CoreSwitch <==> DistSwitch1
-                    CoreSwitch <==> DistSwitch2
-                    DistSwitch1 <==> AccessSwitch1
-                    DistSwitch2 <==> AccessSwitch2
-                    AccessSwitch1 <--> PC
-                    AccessSwitch1 <--> Printer
-                    AccessSwitch2 <--> WLC
-                    WLC <--> AP1
-                    WLC <--> AP2
-                    AP1 -.-> Mobile
-                    AP2 -.-> Mobile
+    HQFW <==> Spine1
+    HQFW <==> Spine2
 
-                    classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:5px,ry:5px;
-                    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
-                    classDef core fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
-                    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px;
-                    class DB,SAN database;
-                    class CoreSwitch core;
-                    class Internet internet;
+    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
+        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20</code>"]
+        HRPC["💻 HR Workstation<br/><code>10.0.4.10</code>"]
+        VoIP["☎️ VoIP PBX (Asterisk)<br/><code>10.0.4.50 :5060</code>"]
+        IoT["🤖 MQTT IoT Sensor<br/><code>10.0.4.70 :1883</code>"]
+        IPCam["📹 IP Camera (RTSP)<br/><code>10.0.4.60 :8554</code>"]
+    end
+
+    HQFW <==> DevPC
+    HQFW <==> HRPC
+    HQFW <==> VoIP
+    HQFW <==> IoT
+    HQFW <==> IPCam
+
+    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
+    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
+    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
+    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
+    
+    class Internet,ISP1,ISP2,DDoS ext;
+    class HQFW,WAF,ZTNA,SIEM,NAC security;
+    class ProdDB,SAN,DRSAN database;
+    class Spine1,Spine2,Leaf1,Leaf2 switch;
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comprehensive Cloud Diagram -->
+            <div id="all-pane" class="panzoom-pane">
+                <div class="mermaid-canvas">
+                    <div id="all-mermaid" class="mermaid">
+
+flowchart TD
+    Internet(("🌐 Internet / WAN"))
+    
+    subgraph ISP ["ISPs & DDoS Scrubbing"]
+        ISP1["🌐 ISP 1 Primary<br/><code>198.51.100.0/24</code>"]
+        ISP2["🌐 ISP 2 Secondary<br/><code>203.0.113.0/24</code>"]
+        DDoS["🛡️ DDoS Scrubbing<br/><code>203.0.113.10 :8080</code>"]
+    end
+
+    subgraph Cloud ["Cloud Tier (172.16.0.0/24)"]
+        CloudTGW["☁️ Cloud Transit Gateway<br/><code>172.16.0.1 / 10.0.3.251</code>"]
+        CloudLB["⚖️ Cloud Load Balancer<br/><code>172.16.0.10 (HAProxy)</code>"]
+        CloudApp["🌩️ Cloud Microservice<br/><code>172.16.0.20 :8090</code>"]
+        CloudDB[("☁️ Cloud PostgreSQL RDS<br/><code>172.16.0.30 :5432</code>")]
+        SaaS["🌐 SaaS SSO Portal<br/><code>172.16.0.40 :8443</code>"]
+        
+        CloudTGW --- CloudLB
+        CloudLB --- CloudApp
+        CloudApp --- CloudDB
+    end
+
+    Internet <==> CloudLB
+    Internet <==> SaaS
+    
+    subgraph Branch ["Branch Office LAN (10.0.5.0/24)"]
+        SDWANBranch["🔀 Branch SD-WAN<br/><code>10.0.5.1 / 203.0.113.50</code>"]
+        BranchPC["💻 Branch PC<br/><code>10.0.5.10 (ibrahim)</code>"]
+    end
+    
+    subgraph VPN ["VPN Clients (10.0.6.0/24)"]
+        VPNClients["🧑‍💻 Remote VPN Clients<br/><code>10.0.6.0/24 (WireGuard)</code>"]
+    end
+
+    Internet <==> DDoS
+    DDoS <==> ISP1
+    DDoS <==> ISP2
+    ISP2 <==> SDWANBranch
+    SDWANBranch --- BranchPC
+    VPNClients -.-> Internet
+
+    subgraph Perimeter ["HQ Perimeter / Edge"]
+        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        ISP2Router["🌐 ISP2 BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
+        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
+    end
+
+    ISP1 <==> EdgeRouter
+    ISP2 <==> ISP2Router
+    EdgeRouter <--> HQFW
+    ISP2Router <--> HQFW
+
+    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
+        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
+        ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+    end
+
+    HQFW <--> WAF
+    HQFW <--> MailServer
+    HQFW <--> Bastion
+    HQFW <--> ZTNA
+    WAF <--> WebPortal
+    VPNClients -.-> ZTNA
+
+    subgraph Core ["Core Backbone (10.0.2.0/24)"]
+        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
+        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
+        NAC["🛡️ NAC ISE Server<br/><code>10.0.2.15 :8100</code>"]
+        NMS["📈 NMS Grafana/Prom<br/><code>10.0.2.21 :3000</code>"]
+    end
+
+    HQFW <==> ADDC
+    HQFW <==> SIEM
+    HQFW <==> NAC
+    HQFW <==> NMS
+
+    subgraph DC ["DC Spine-Leaf Fabric (10.0.3.0/24)"]
+        Spine1["🔀 Spine Switch 1<br/><code>10.0.3.241</code>"]
+        Spine2["🔀 Spine Switch 2<br/><code>10.0.3.242</code>"]
+        Leaf1["🔀 Leaf Switch 1 (Compute)<br/><code>10.0.3.243</code>"]
+        Leaf2["🔀 Leaf Switch 2 (Storage)<br/><code>10.0.3.244</code>"]
+        
+        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
+        ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
+        SAN[("💾 MinIO Primary SAN<br/><code>10.0.3.30 :9001</code>")]
+        DRSAN[("💾 MinIO DR SAN<br/><code>10.0.3.35 :9003</code>")]
+        
+        Spine1 === Leaf1
+        Spine1 === Leaf2
+        Spine2 === Leaf1
+        Spine2 === Leaf2
+        
+        Leaf1 --- ProdDB
+        Leaf1 --- ERP
+        Leaf2 --- SAN
+        Leaf2 --- DRSAN
+    end
+
+    HQFW <==> Spine1
+    HQFW <==> Spine2
+    
+    CloudTGW <==> Spine1
+    CloudTGW <==> Spine2
+
+    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
+        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20</code>"]
+        HRPC["💻 HR Workstation<br/><code>10.0.4.10</code>"]
+        VoIP["☎️ VoIP PBX (Asterisk)<br/><code>10.0.4.50 :5060</code>"]
+        IoT["🤖 MQTT IoT Sensor<br/><code>10.0.4.70 :1883</code>"]
+        IPCam["📹 IP Camera (RTSP)<br/><code>10.0.4.60 :8554</code>"]
+    end
+
+    HQFW <==> DevPC
+    HQFW <==> HRPC
+    HQFW <==> VoIP
+    HQFW <==> IoT
+    HQFW <==> IPCam
+
+    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
+    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
+    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
+    classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px;
+    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
+    
+    class Internet,ISP1,ISP2,DDoS ext;
+    class HQFW,WAF,ZTNA,SIEM,NAC security;
+    class ProdDB,SAN,DRSAN,CloudDB database;
+    class CloudTGW,CloudLB,CloudApp,SaaS cloud;
+    class Spine1,Spine2,Leaf1,Leaf2 switch;
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Pan/Zoom HUD -->
+            <div class="canvas-hud-overlay">
+                <button onclick="zoomIn()" title="Zoom In">+</button>
+                <button onclick="zoomOut()" title="Zoom Out">−</button>
+                <div class="hud-divider"></div>
+                <button onclick="resetPanZoom()" title="Reset Zoom">100%</button>
+                <button onclick="fitToScreen()" title="Fit to Canvas">Fit</button>
+                <div class="hud-divider"></div>
+                <span id="zoomDisplay" class="zoom-level-text">100%</span>
             </div>
         </div>
-
-        <!-- ==============================
-             LARGE ENTERPRISE DIAGRAM
-        =============================== -->
-        <div id="large-diagram" class="mermaid-diagram">
-            <div class="mermaid">
-                %%{init: {
-                    'theme': 'base',
-                    'themeVariables': { 
-                        'fontFamily': 'Inter', 
-                        'primaryColor': '#0f172a', 
-                        'primaryTextColor': '#e2e8f0', 
-                        'primaryBorderColor': '#6366f1', 
-                        'lineColor': '#64748b', 
-                        'clusterBkg': 'rgba(30, 41, 59, 0.4)',
-                        'clusterBorder': '#475569'
-                    }
-                }}%%
-                flowchart TD
-                    Internet((🌐 Internet and Cloud))
-                    ISP1[ISP 1 - Primary]
-                    ISP2[ISP 2 - Secondary]
-                    SaaS[SaaS Apps<br/>Office 365, Salesforce]
-                    DDoS[DDoS Protection<br/>Cloudflare / Akamai]
-                    
-                    %% CLOUD INFRASTRUCTURE
-                    subgraph Cloud [Cloud Infrastructure - AWS/Azure]
-                        TGW[Transit Gateway / VNet Peering]
-                        CloudLB[Cloud Load Balancer]
-                        K8s[Kubernetes Cluster]
-                        CloudDB[(Cloud Managed Database)]
-                        TGW --- CloudLB
-                        CloudLB --- K8s
-                        K8s --- CloudDB
-                    end
-
-                    %% REMOTE ACCESS & BRANCHES
-                    subgraph Remote [Remote Branches & Users]
-                        RemoteUser[Remote Workers]
-                        BranchOffice[Branch Office Network]
-                        SDWANBranch[Branch SD-WAN Edge]
-                        BranchOffice --- SDWANBranch
-                    end
-
-                    Internet <==> DDoS
-                    DDoS <==> ISP1
-                    DDoS <==> ISP2
-                    Internet <==> SaaS
-                    Internet <==> Cloud
-                    RemoteUser -.-> Internet
-                    SDWANBranch <==> Internet
-
-                    %% HEADQUARTERS PERIMETER
-                    subgraph HQEdge [HQ Perimeter Edge]
-                        BGPRouters[Dual BGP Edge Routers]
-                        WAF[Web Application Firewall]
-                        HQFW[Redundant NGFW Cluster]
-                        ZTNA[Zero Trust / VPN Gateway]
-                    end
-
-                    ISP1 <==> BGPRouters
-                    ISP2 <==> BGPRouters
-                    BGPRouters <--> WAF
-                    WAF <--> HQFW
-                    BGPRouters <--> ZTNA
-                    ZTNA <--> HQFW
-                    
-                    %% DMZ
-                    subgraph DMZ [Demilitarized Zone - DMZ]
-                        DMZSwitch[DMZ Switch]
-                        ReverseProxy[Reverse Proxy / ADC]
-                        MailRelay[Email Security Gateway]
-                        Bastion[Bastion / Jump Host]
-                        DMZSwitch --- ReverseProxy
-                        DMZSwitch --- MailRelay
-                        DMZSwitch --- Bastion
-                    end
-                    HQFW <--> DMZSwitch
-
-                    %% HQ CORE
-                    subgraph Core [Core Backbone - vPC / VSS]
-                        CoreA{Core Switch A}
-                        CoreB{Core Switch B}
-                        CoreA === CoreB
-                    end
-
-                    HQFW <==> CoreA
-                    HQFW <==> CoreB
-                    
-                    %% SD-WAN
-                    subgraph SDWANLayer [WAN Edge]
-                        SDWANHub[SD-WAN Hub Appliance]
-                    end
-                    SDWANHub <==> Internet
-                    SDWANHub <==> CoreA
-                    SDWANHub <==> CoreB
-                    
-                    %% SECURITY & MANAGEMENT
-                    subgraph SecMgmt [Security & Management / OOB]
-                        SIEM[SIEM / SOC]
-                        NAC[Network Access Control - ISE/ClearPass]
-                        NMS[Network Monitoring - SolarWinds]
-                    end
-                    CoreA --- SecMgmt
-                    CoreB --- SecMgmt
-
-                    %% ON PREM DATA CENTER (SPINE-LEAF)
-                    subgraph DC [On-Prem Data Center - Spine/Leaf]
-                        Spine1[Spine Switch 1]
-                        Spine2[Spine Switch 2]
-                        Leaf1[Leaf Switch 1]
-                        Leaf2[Leaf Switch 2]
-                        VMware[VMware ESXi Cluster]
-                        SAN[(All-Flash SAN)]
-                        MainDB[(Oracle/SQL DB)]
-                        Backup[(Backup & DR Storage)]
-                        Spine1 === Leaf1
-                        Spine1 === Leaf2
-                        Spine2 === Leaf1
-                        Spine2 === Leaf2
-                        Leaf1 --- VMware
-                        Leaf2 --- VMware
-                        Leaf1 --- MainDB
-                        Leaf2 --- SAN
-                        Leaf2 --- Backup
-                    end
-                    
-                    CoreA <==> Spine1
-                    CoreB <==> Spine2
-
-                    %% DISTRIBUTION
-                    subgraph Dist [Campus Distribution]
-                        DistA[Distribution Switch A]
-                        DistB[Distribution Switch B]
-                    end
-                    CoreA <==> DistA
-                    CoreB <==> DistB
-                    DistA === DistB
-
-                    %% ACCESS
-                    subgraph Access [Campus Access Layer]
-                        Acc1[Access Switch 1 - PoE+]
-                        Acc2[Access Switch 2 - PoE+]
-                        WLC1[Primary WLC]
-                        WLC2[Secondary WLC]
-                    end
-                    DistA <==> Acc1
-                    DistB <==> Acc2
-                    DistA --- WLC1
-                    DistB --- WLC2
-                    
-                    %% ENDPOINTS
-                    subgraph Endpoints [Endpoints]
-                        VoIP[☎️ VoIP Phones]
-                        Cam[📹 IP Cameras / IoT]
-                        APs[📡 High-Density APs]
-                        Users[💻 User Workstations]
-                    end
-                    Acc1 --- VoIP
-                    Acc1 --- Users
-                    Acc2 --- Cam
-                    Acc2 --- APs
-                    WLC1 -.- APs
-                    WLC2 -.- APs
-
-                    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:5px,ry:5px;
-                    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
-                    classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px;
-                    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
-                    classDef core fill:#5b21b6,stroke:#a78bfa,stroke-width:2px;
-                    
-                    class Internet,ISP1,ISP2,DDoS ext;
-                    class TGW,CloudLB,K8s,CloudDB,SaaS cloud;
-                    class WAF,HQFW,ZTNA,SIEM security;
-                    class CoreA,CoreB core;
-            </div>
-        </div>
-
     </div>
 
-    <!-- Load Mermaid.js to render the graph dynamically -->
+    <!-- Subnet Color Legend -->
+    <div class="legend-bar">
+        <span><span class="legend-dot" style="background:#10b981"></span>WAN / Edge</span>
+        <span><span class="legend-dot" style="background:#ef4444"></span>Firewall / Security</span>
+        <span><span class="legend-dot" style="background:#3b82f6"></span>DMZ & Application</span>
+        <span><span class="legend-dot" style="background:#8b5cf6"></span>Data Center & Databases</span>
+        <span><span class="legend-dot" style="background:#38bdf8"></span>Cloud VPC Tier</span>
+        <span><span class="legend-dot" style="background:#6366f1"></span>Spine-Leaf Switches</span>
+        <span>💡 <em>Click any node on the diagram to inspect its ports, IP & CTF attack surface! Drag to Pan, Scroll to Zoom.</em></span>
+    </div>
+
+    <!-- Node Inspector Side Drawer -->
+    <div id="nodeInspector" class="inspector-drawer">
+        <div class="drawer-header">
+            <div class="drawer-title-group">
+                <div id="drawerAvatar" class="node-avatar">🛡️</div>
+                <div class="node-titles">
+                    <h3 id="drawerNodeName">Node Details</h3>
+                    <p id="drawerHostname">hostname</p>
+                </div>
+            </div>
+            <button class="drawer-close" onclick="closeInspector()">✕</button>
+        </div>
+
+        <div class="drawer-body">
+            <!-- Basic info -->
+            <div class="drawer-section">
+                <div class="section-label">Network Coordinates</div>
+                <div class="meta-grid">
+                    <div class="meta-cell">
+                        <span class="meta-title">IP Address</span>
+                        <span id="drawerIP" class="meta-val copy-pill" onclick="copyText(this.innerText)">10.0.1.10</span>
+                    </div>
+                    <div class="meta-cell">
+                        <span class="meta-title">Container Name</span>
+                        <span id="drawerContainer" class="meta-val copy-pill" onclick="copyText(this.innerText)">nexus-container</span>
+                    </div>
+                </div>
+                <div style="margin-top:0.75rem;">
+                    <span class="meta-title">Subnets:</span>
+                    <div id="drawerSubnets" style="margin-top:0.25rem;"></div>
+                </div>
+            </div>
+
+            <!-- Role & Tech -->
+            <div class="drawer-section">
+                <div class="section-label">Architecture Role & Stack</div>
+                <p id="drawerRole" style="font-size:0.85rem; color:#e2e8f0; line-height:1.5; margin-bottom:0.5rem;"></p>
+                <div class="meta-cell">
+                    <span class="meta-title">Tech Stack</span>
+                    <span id="drawerTech" class="meta-val" style="color:#38bdf8;"></span>
+                </div>
+                <div class="meta-cell" style="margin-top:0.5rem;">
+                    <span class="meta-title">Exposed Ports / Protocols</span>
+                    <span id="drawerPorts" class="meta-val" style="color:#fbbf24;"></span>
+                </div>
+            </div>
+
+            <!-- Attack Surface & CTF -->
+            <div class="drawer-section" style="border-color: rgba(239, 68, 68, 0.3);">
+                <div class="section-label" style="color:#f87171;">🎯 Attack Surface & Pentesting</div>
+                <p id="drawerVuln" style="font-size:0.8rem; color:#fca5a5; line-height:1.5; margin-bottom:0.75rem;"></p>
+                <div class="meta-cell">
+                    <span class="meta-title">Credentials / Auth</span>
+                    <span id="drawerCreds" class="meta-val copy-pill" style="color:#fde047;" onclick="copyText(this.innerText)"></span>
+                </div>
+            </div>
+
+            <!-- Quick Exec Command -->
+            <div class="drawer-section">
+                <div class="section-label">Quick Shell Access</div>
+                <div class="terminal-block">
+                    <span id="drawerDockerCmd">docker exec -it ...</span>
+                    <button class="btn-copy-code" onclick="copyText(document.getElementById('drawerDockerCmd').innerText)">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastMsg" class="toast-msg">Copied to clipboard!</div>
+
+    <!-- Scripts -->
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({ startOnLoad: true });
+        
+        mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
 
-        // Toggle function exposed to window
-        window.showDiagram = function(type) {
-            // Update buttons
-            document.getElementById('btnStandard').classList.remove('active');
-            document.getElementById('btnLarge').classList.remove('active');
+        // Container Node Database
+        window.NODES_DB = {"Internet": {"name": "Public Internet & WAN", "container": "wan-cloud-backbone", "hostname": "internet-wan-cloud", "ip": "198.51.100.0/24 & 203.0.113.0/24", "subnets": ["WAN (198.51.100.0/24)", "ISP2 (203.0.113.0/24)"], "role": "Public Internet, Dual ISP BGP Uplinks & External Traffic Simulator", "ports": "BGP, DNS, Transit", "tech": "BGP Simulation / Docker Bridge", "security_zone": "WAN", "vuln": "Simulates internet routing and external black-box attack origin.", "creds": "Public Internet Gateway", "docker_cmd": "# External network simulator"}, "ISP1": {"name": "ISP 1 Primary Uplink", "container": "nexus-wan-isp1", "hostname": "isp1-transit", "ip": "198.51.100.0/24", "subnets": ["WAN (198.51.100.0/24)"], "role": "Primary Corporate Internet Service Provider (BGP AS 65001)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Primary inbound link for corporate traffic and web portal users.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 1 Uplink node"}, "ISP2": {"name": "ISP 2 Secondary Uplink", "container": "nexus-wan-isp2", "hostname": "isp2-transit", "ip": "203.0.113.0/24", "subnets": ["ISP2 (203.0.113.0/24)"], "role": "Secondary Redundant Internet Service Provider (BGP AS 65002)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Failover path and branch office SD-WAN connectivity provider.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 2 Uplink node"}, "EdgeRouter": {"name": "Edge Router A (BGP)", "container": "nexus-edge-router", "hostname": "edge-gw-01", "ip": "198.51.100.1 / 10.0.1.1", "subnets": ["WAN (198.51.100.0/24)", "DMZ (10.0.1.0/24)"], "role": "Primary BGP Edge Gateway & WAN Router (ISP1)", "ports": "BGP / NAT Routing (Internal)", "tech": "Debian Linux + Quagga/FRR BGP Routing", "security_zone": "WAN", "vuln": "Boundary router, routes traffic between WAN and DMZ.", "creds": "Managed via network automation / Docker root", "docker_cmd": "docker exec -it nexus-edge-router bash"}, "HQFW": {"name": "HQ Next-Gen Firewall", "container": "nexus-hq-firewall", "hostname": "fw-perimeter-01", "ip": "10.0.1.254, 10.0.2.1, 10.0.3.1, 10.0.4.1", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "DC (10.0.3.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed Stateful Perimeter Firewall", "ports": "iptables Stateful Packet Inspection", "tech": "iptables + IP Forwarding Engine", "security_zone": "DMZ", "vuln": "Enforces strict inter-VLAN zoning rules and segment isolation.", "creds": "NET_ADMIN privileged container", "docker_cmd": "docker exec -it nexus-hq-firewall bash"}, "WAF": {"name": "Nginx WAF & Reverse Proxy", "container": "nexus-corp-waf-proxy", "hostname": "srv-waf-proxy", "ip": "10.0.1.10", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Web Application Firewall & Reverse Proxy", "ports": "Host 80 -> Container 80", "tech": "Nginx 1.25 Alpine Reverse Proxy", "security_zone": "DMZ", "vuln": "Proxies requests to Corporate Web Portal; initial target for external recon.", "creds": "Public Web Service (http://localhost:80)", "docker_cmd": "docker exec -it nexus-corp-waf-proxy sh"}, "WebPortal": {"name": "Corporate Web Portal", "container": "nexus-corp-web-portal", "hostname": "srv-dmz-web01", "ip": "10.0.1.20", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Customer & Shipment Portal (Flask App)", "ports": "Container 5000 (Proxied by WAF)", "tech": "Python 3.11 Flask + SQLite3", "security_zone": "DMZ", "vuln": "1. SQL Injection on `/?track_id=` (Flag 1)\\n2. Command Injection in `/admin/server-check` (Flag 2)", "creds": "admin / NexusTechAdmin2026!", "docker_cmd": "docker exec -it nexus-corp-web-portal bash"}, "MailServer": {"name": "Corporate Mail Server", "container": "nexus-corp-mail-server", "hostname": "srv-mail-01", "ip": "10.0.1.30", "subnets": ["DMZ (10.0.1.0/24)"], "role": "MailHog SMTP & Webmail Testing Server", "ports": "Host 8025:8025 (Web UI), Host 1025:1025 (SMTP)", "tech": "MailHog Go SMTP Engine", "security_zone": "DMZ", "vuln": "Unauthenticated Webmail UI on port 8025; captures internal password resets.", "creds": "Web UI: http://localhost:8025 (No auth)", "docker_cmd": "docker exec -it nexus-corp-mail-server sh"}, "Bastion": {"name": "SSH Bastion Jump Host", "container": "nexus-corp-bastion", "hostname": "bastion", "ip": "10.0.1.40 (DMZ), 10.0.2.5 (Core), 10.0.4.5 (Campus)", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed SSH Secure Jump Host", "ports": "Host 2222 -> Container 22", "tech": "OpenSSH Server on Alpine", "security_zone": "DMZ", "vuln": "Direct pivot route from external network into Core and Campus subnets.", "creds": "devops-remote / devops-remote@123", "docker_cmd": "ssh devops-remote@localhost -p 2222"}, "ADDC": {"name": "Active Directory DC", "container": "nexus-ad-dc", "hostname": "dc01", "ip": "10.0.2.10", "subnets": ["Core (10.0.2.0/24)"], "role": "Samba4 AD Domain Controller & SMB Share", "ports": "SMB (445), LDAP (389), Kerberos (88)", "tech": "Samba 4 AD DC", "security_zone": "Core", "vuln": "Unauthenticated SMB share enum reveals `sync_prod_db.sh` containing DB root password.", "creds": "Domain Admin: Administrator / NexusAD2026!Admin", "docker_cmd": "docker exec -it nexus-ad-dc bash"}, "SIEM": {"name": "SIEM / SOC Collector", "container": "nexus-corp-siem-soc", "hostname": "siem-soc-01", "ip": "10.0.2.99", "subnets": ["Core (10.0.2.0/24)"], "role": "Central Rsyslog Security Event Collector", "ports": "Syslog UDP/TCP 514", "tech": "Rsyslog Daemon + SOC audit log parser", "security_zone": "Core", "vuln": "Contains pre-seeded event logs for Blue-Team and incident response forensics.", "creds": "Blue-Team entry point (Root)", "docker_cmd": "docker exec -it nexus-corp-siem-soc bash"}, "ProdDB": {"name": "Production PostgreSQL DB", "container": "nexus-dc-prod-database", "hostname": "db-prod-01", "ip": "10.0.3.20", "subnets": ["DC (10.0.3.0/24)"], "role": "Crown Jewels Enterprise Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "DC", "vuln": "Contains `system_vault_keys` table with Flag 3 (Crown Jewels CTF).", "creds": "nexus_admin / Nexu$$Prod2026!Sec (DB: nexus_prod)", "docker_cmd": "docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod"}, "ERP": {"name": "Internal ERP Intranet", "container": "nexus-dc-internal-erp", "hostname": "srv-erp-01", "ip": "10.0.3.10", "subnets": ["DC (10.0.3.0/24)"], "role": "Enterprise Resource Planning & Payroll Portal", "ports": "HTTP 8000 (Internal DC)", "tech": "Python 3.11 Flask + PostgreSQL Client", "security_zone": "DC", "vuln": "Internal financial records; connects directly to Production Database.", "creds": "Internal employee domain credentials", "docker_cmd": "docker exec -it nexus-dc-internal-erp bash"}, "SAN": {"name": "MinIO SAN Primary Storage", "container": "nexus-dc-backup-storage", "hostname": "san-backup-01", "ip": "10.0.3.30", "subnets": ["DC (10.0.3.0/24)"], "role": "Primary S3-Compatible Object Storage SAN", "ports": "Container 9000 (S3 API), 9001 (Console)", "tech": "MinIO Distributed Object Storage", "security_zone": "DC", "vuln": "Stores encrypted and raw backups of internal corporate data.", "creds": "nexus_san_root / SuperS3cUr3_B4ckup_Vault_Pass_2026!", "docker_cmd": "docker exec -it nexus-dc-backup-storage sh"}, "DevPC": {"name": "DevOps Workstation", "container": "nexus-pc-dev-01", "hostname": "dev-workstation-01", "ip": "10.0.4.20", "subnets": ["Campus (10.0.4.0/24)"], "role": "DevOps Engineer PC (tahmed) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Docker client, Git, Dev tools", "security_zone": "Campus", "vuln": "Pre-configured developer workstation with git repo history & SSH keys.", "creds": "tahmed / DevOpsP@ss2026!", "docker_cmd": "docker exec -it nexus-pc-dev-01 bash"}, "HRPC": {"name": "HR Workstation", "container": "nexus-pc-hr-01", "hostname": "hr-workstation-01", "ip": "10.0.4.10", "subnets": ["Campus (10.0.4.0/24)"], "role": "HR Director PC (sjenkins) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Office Tools", "security_zone": "Campus", "vuln": "Contains internal HR employee rosters, salary data, and policy docs.", "creds": "sjenkins / HrDirector9921!", "docker_cmd": "docker exec -it nexus-pc-hr-01 bash"}, "ISP2Router": {"name": "ISP2 BGP Router", "container": "nexus-isp2-router", "hostname": "isp2-gw-01", "ip": "203.0.113.1 (ISP2), 198.51.100.2 (WAN), 10.0.1.2 (DMZ)", "subnets": ["ISP2 (203.0.113.0/24)", "WAN", "DMZ"], "role": "Secondary Uplink Router (Dual-Homed Redundancy)", "ports": "BGP / OSPF / Routing", "tech": "Debian + Quagga/FRR Routing", "security_zone": "WAN", "vuln": "Secondary WAN path; handles failover and branch SD-WAN connections.", "creds": "Network Admin privileged access", "docker_cmd": "docker exec -it nexus-isp2-router bash"}, "DDoS": {"name": "DDoS Scrubbing Center", "container": "nexus-ddos-proxy", "hostname": "ddos-scrub-01", "ip": "203.0.113.10 / 198.51.100.10", "subnets": ["ISP2 (203.0.113.0/24)", "WAN (198.51.100.0/24)"], "role": "Cloud DDoS Mitigation & Traffic Scrubbing", "ports": "Host 8080 -> Container 80", "tech": "Nginx Rate-Limiting & Traffic Inspection Proxy", "security_zone": "WAN", "vuln": "Simulates Cloudflare / Akamai scrubbing; rate-limits brute-force attacks.", "creds": "Public Proxy http://localhost:8080", "docker_cmd": "docker exec -it nexus-ddos-proxy sh"}, "ZTNA": {"name": "Zero-Trust VPN Gateway", "container": "nexus-ztna-gateway", "hostname": "ztna-gw-01", "ip": "10.0.1.50 (DMZ), 10.0.6.1 (VPN)", "subnets": ["DMZ (10.0.1.0/24)", "VPN (10.0.6.0/24)"], "role": "WireGuard Zero Trust Network Access Gateway", "ports": "Host 51820:51820/udp, Host 8443:8443", "tech": "WireGuard Kernel Module + ZTNA Controller", "security_zone": "DMZ", "vuln": "Gateway for remote workforce VPN clients; requires valid WireGuard key.", "creds": "ZTNA Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-ztna-gateway bash"}, "NAC": {"name": "NAC Server (Cisco ISE)", "container": "nexus-nac-server", "hostname": "nac-ise-01", "ip": "10.0.2.15", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Access Control & 802.1X Policy Server", "ports": "Port 8100 (Management API)", "tech": "Python 3.11 Flask 802.1X Simulation", "security_zone": "Core", "vuln": "Vulnerable to MAC Authentication Bypass (MAB) on `/api/bypass` (Flag 6).", "creds": "Admin: nac_admin / ISE@Nexus2026!", "docker_cmd": "docker exec -it nexus-nac-server bash"}, "NMS": {"name": "NMS (Prometheus + Grafana)", "container": "nexus-nms-grafana & nexus-nms-prometheus", "hostname": "nms-grafana-01 & prometheus-01", "ip": "10.0.2.21 & 10.0.2.20", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Management System & Telemetry Dashboard", "ports": "Host 3000 -> Container 3000", "tech": "Grafana v10 + Prometheus v2.50", "security_zone": "Core", "vuln": "Monitors network traffic, packet loss, and CPU load across switches.", "creds": "nexus_nms_admin / NMS@Nexus2026! (Dashboard: http://localhost:3000)", "docker_cmd": "docker exec -it nexus-nms-grafana sh"}, "Spine1": {"name": "DC Spine Switch 1", "container": "nexus-dc-spine-1", "hostname": "dc-spine-01", "ip": "10.0.3.241 (DC), 10.0.2.41 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 1 (Nexus 9516 sim)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Interconnects all leaf switches with non-blocking 100GbE full-mesh fabric.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-1 bash"}, "Spine2": {"name": "DC Spine Switch 2", "container": "nexus-dc-spine-2", "hostname": "dc-spine-02", "ip": "10.0.3.242 (DC), 10.0.2.42 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 2 (Redundant)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Redundant spine node providing dual-plane fabric resilience.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-2 bash"}, "Leaf1": {"name": "DC Leaf Switch 1", "container": "nexus-dc-leaf-1", "hostname": "dc-leaf-01", "ip": "10.0.3.243", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 1 (Compute Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Production Database (db-prod-01) and ERP Intranet.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-1 bash"}, "Leaf2": {"name": "DC Leaf Switch 2", "container": "nexus-dc-leaf-2", "hostname": "dc-leaf-02", "ip": "10.0.3.244", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 2 (Storage Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Primary SAN Storage and Disaster Recovery Backup SAN.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-2 bash"}, "DRSAN": {"name": "MinIO DR Backup SAN", "container": "nexus-dc-backup-dr", "hostname": "san-dr-01", "ip": "10.0.3.35", "subnets": ["DC (10.0.3.0/24)"], "role": "Disaster Recovery Storage & Replicated Vault", "ports": "Container 9002 (S3 API), 9003 (Console)", "tech": "MinIO Object Storage (DR Node)", "security_zone": "DC", "vuln": "Secondary off-site backup vault replicated from primary SAN.", "creds": "nexus_dr_admin / DRBackup_Nexus@2026!", "docker_cmd": "docker exec -it nexus-dc-backup-dr sh"}, "SDWANBranch": {"name": "Branch SD-WAN Edge", "container": "nexus-branch-sdwan", "hostname": "branch-sdwan-dhaka", "ip": "203.0.113.50 (ISP2), 10.0.5.1 (Branch)", "subnets": ["ISP2 (203.0.113.0/24)", "Branch (10.0.5.0/24)"], "role": "Dhaka Regional Branch SD-WAN Edge Gateway", "ports": "WireGuard IPSec Tunnel", "tech": "WireGuard SD-WAN Overlay", "security_zone": "Branch", "vuln": "Establishes encrypted site-to-site SD-WAN tunnel over ISP2 to HQ.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-branch-sdwan bash"}, "BranchPC": {"name": "Branch Office PC", "container": "nexus-branch-pc-01", "hostname": "branch-pc-01", "ip": "10.0.5.10", "subnets": ["Branch (10.0.5.0/24)"], "role": "Branch Employee Workstation (ibrahim) - Gray-Box", "ports": "SSH / Terminal Access", "tech": "Debian Linux Workstation", "security_zone": "Branch", "vuln": "1. SSH brute-force target (`ibrahim:Branch@2026`)\\n2. World-readable `/etc/wireguard/wg0.conf` key leak to pivot to HQ.", "creds": "ibrahim / Branch@2026", "docker_cmd": "docker exec -it nexus-branch-pc-01 bash"}, "VoIP": {"name": "VoIP PBX Server", "container": "nexus-voip-pbx", "hostname": "voip-pbx-01", "ip": "10.0.4.50", "subnets": ["Campus (10.0.4.0/24)"], "role": "Asterisk Corporate VoIP PBX Telephony Server", "ports": "Host 5060:5060 (SIP UDP/TCP)", "tech": "Asterisk 20 LTS VoIP PBX", "security_zone": "Campus", "vuln": "Weak SIP extension credentials (`1003:1234`), unencrypted audio conference eavesdropping (ext 9000).", "creds": "SIP Accounts: 1001, 1002, 1003 (Pass: 1234)", "docker_cmd": "docker exec -it nexus-voip-pbx bash"}, "IoT": {"name": "MQTT IoT Sensor Device", "container": "nexus-iot-device-01", "hostname": "iot-campus-01", "ip": "10.0.4.70", "subnets": ["Campus (10.0.4.0/24)"], "role": "Smart Campus Environmental Sensor & MQTT Broker", "ports": "Port 1883 (MQTT)", "tech": "Eclipse Mosquitto MQTT Broker", "security_zone": "Campus", "vuln": "Unauthenticated MQTT broker (`allow_anonymous true`) leaks internal infrastructure alerts & DC IPs.", "creds": "Anonymous access allowed (`mosquitto_sub -t '#'`)", "docker_cmd": "docker exec -it nexus-iot-device-01 sh"}, "IPCam": {"name": "CCTV IP Camera Server", "container": "nexus-ipcam-server", "hostname": "ipcam-01", "ip": "10.0.4.60", "subnets": ["Campus (10.0.4.0/24)"], "role": "RTSP Surveillance CCTV Stream Server", "ports": "Host 8554:8554 (RTSP), Host 8888:8888 (HLS Web)", "tech": "MediaMTX RTSP/HLS Video Server", "security_zone": "Campus", "vuln": "Unauthenticated RTSP video surveillance feed accessible on network.", "creds": "RTSP: rtsp://localhost:8554/campus-cam01", "docker_cmd": "docker exec -it nexus-ipcam-server sh"}, "CloudTGW": {"name": "Cloud Transit Gateway", "container": "nexus-cloud-gateway", "hostname": "cloud-tgw-01", "ip": "172.16.0.1 (Cloud), 10.0.3.251 (DC)", "subnets": ["Cloud (172.16.0.0/24)", "DC (10.0.3.0/24)"], "role": "AWS Transit Gateway / Azure VNet Peering Router", "ports": "Inter-VPC Peering & BGP Overlay", "tech": "Debian Linux + Policy Routing Engine", "security_zone": "Cloud", "vuln": "Direct secure peering bridge between on-premises Data Center and Cloud VPC.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-cloud-gateway bash"}, "CloudLB": {"name": "Cloud Load Balancer", "container": "nexus-cloud-lb", "hostname": "cloud-alb-01", "ip": "172.16.0.10", "subnets": ["Cloud (172.16.0.0/24)"], "role": "HAProxy Cloud Application Load Balancer (ALB)", "ports": "Container 80 / 443", "tech": "HAProxy 2.9 Alpine", "security_zone": "Cloud", "vuln": "Distributes external cloud requests to containerized microservice backends.", "creds": "Internal Cloud Routing", "docker_cmd": "docker exec -it nexus-cloud-lb sh"}, "CloudApp": {"name": "Cloud Microservice App", "container": "nexus-cloud-app", "hostname": "cloud-app-01", "ip": "172.16.0.20", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Kubernetes-style Cloud API Microservice", "ports": "Host 8090 -> Container 8080", "tech": "Python 3.11 Flask Microservice + JWT", "security_zone": "Cloud", "vuln": "1. Server-Side Request Forgery (SSRF) on `/api/v1/fetch?url=` (Flag 4)\\n2. Weak JWT HS256 algorithm vulnerability.", "creds": "API Endpoint: http://localhost:8090/api/v1/config", "docker_cmd": "docker exec -it nexus-cloud-app bash"}, "CloudDB": {"name": "Cloud Managed Database (RDS)", "container": "nexus-cloud-db", "hostname": "cloud-rds-01", "ip": "172.16.0.30", "subnets": ["Cloud (172.16.0.0/24)"], "role": "AWS RDS Simulated PostgreSQL Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "Cloud", "vuln": "Cloud-native data store; vulnerable to credential extraction via Cloud SSRF.", "creds": "nexus_rds_admin / RdsNexusProd@2026!Cloud (DB: nexus_cloud_prod)", "docker_cmd": "docker exec -it nexus-cloud-db psql -U nexus_rds_admin -d nexus_cloud_prod"}, "SaaS": {"name": "SaaS SSO Identity Portal", "container": "nexus-saas-sso", "hostname": "sso-portal-01", "ip": "172.16.0.40", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Corporate SaaS Identity Provider (SAML / OAuth2)", "ports": "Host 8443:8443", "tech": "Python 3.11 Flask SAML/OAuth2 IdP Mock", "security_zone": "Cloud", "vuln": "Credential stuffing target & authentication bypass on `/dashboard` (Flag 5).", "creds": "SSO Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-saas-sso bash"}, "VPNClients": {"name": "Remote VPN Clients", "container": "virtual-client-node", "hostname": "vpn-client-pool", "ip": "10.0.6.10 - 10.0.6.50", "subnets": ["VPN (10.0.6.0/24)"], "role": "Remote Workforce Laptops & Mobile Clients", "ports": "WireGuard UDP 51820", "tech": "WireGuard Client Overlay", "security_zone": "VPN", "vuln": "Connects through ZTNA Gateway (10.0.1.50) to access internal resources.", "creds": "WireGuard Client Keypairs", "docker_cmd": "# Simulates remote workforce endpoints"}};
+
+        // State variables
+        let currentMode = 'core';
+        let zoomScale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        const viewportStage = document.getElementById('viewportStage');
+
+        // Mode Switching
+        window.switchLabMode = function(mode) {
+            currentMode = mode;
             
-            // Update views
-            if(type === 'standard') {
-                document.getElementById('btnStandard').classList.add('active');
-                document.getElementById('standard-diagram').classList.add('active');
-                document.getElementById('large-diagram').classList.remove('active');
-            } else {
-                document.getElementById('btnLarge').classList.add('active');
-                document.getElementById('large-diagram').classList.add('active');
-                document.getElementById('standard-diagram').classList.remove('active');
+            // Buttons
+            document.getElementById('btnCore').classList.toggle('active', mode === 'core');
+            document.getElementById('btnEnterprise').classList.toggle('active', mode === 'enterprise');
+            document.getElementById('btnAll').classList.toggle('active', mode === 'all');
+
+            // Panes
+            document.getElementById('core-pane').classList.toggle('active', mode === 'core');
+            document.getElementById('enterprise-pane').classList.toggle('active', mode === 'enterprise');
+            document.getElementById('all-pane').classList.toggle('active', mode === 'all');
+
+            // Update Metrics
+            if (mode === 'core') {
+                document.getElementById('metricNodes').innerText = '13';
+                document.getElementById('metricSubnets').innerText = '5 / 9';
+                document.getElementById('metricFlags').innerText = '3 Flags';
+            } else if (mode === 'enterprise') {
+                document.getElementById('metricNodes').innerText = '28';
+                document.getElementById('metricSubnets').innerText = '8 / 9';
+                document.getElementById('metricFlags').innerText = '5 Flags';
+            } else if (mode === 'all') {
+                document.getElementById('metricNodes').innerText = '33';
+                document.getElementById('metricSubnets').innerText = '9 / 9';
+                document.getElementById('metricFlags').innerText = '6 Flags';
+            }
+
+            // Clean transition: reset zoom & fit
+            setTimeout(() => {
+                fitToScreen();
+                attachNodeClickHandlers();
+            }, 100);
+        };
+
+        // Pan & Zoom Engine
+        function updateTransform() {
+            const activePane = document.querySelector('.panzoom-pane.active .mermaid-canvas');
+            if (activePane) {
+                activePane.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+                document.getElementById('zoomDisplay').innerText = Math.round(zoomScale * 100) + '%';
             }
         }
+
+        window.zoomIn = function() {
+            zoomScale = Math.min(zoomScale + 0.15, 3.0);
+            updateTransform();
+        };
+
+        window.zoomOut = function() {
+            zoomScale = Math.max(zoomScale - 0.15, 0.3);
+            updateTransform();
+        };
+
+        window.resetPanZoom = function() {
+            zoomScale = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        };
+
+        window.fitToScreen = function() {
+            const activeSvg = document.querySelector('.panzoom-pane.active svg');
+            if (!activeSvg) return;
+            const stageRect = viewportStage.getBoundingClientRect();
+            const svgRect = activeSvg.getBoundingClientRect();
+            
+            const rawWidth = svgRect.width / zoomScale;
+            const rawHeight = svgRect.height / zoomScale;
+            
+            if (rawWidth > 0 && rawHeight > 0) {
+                const scaleX = (stageRect.width - 80) / rawWidth;
+                const scaleY = (stageRect.height - 80) / rawHeight;
+                zoomScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1.2);
+            }
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        };
+
+        // Mouse Drag to Pan
+        viewportStage.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.canvas-hud-overlay') || e.target.closest('.node')) return;
+            isDragging = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Mouse Wheel to Zoom
+        viewportStage.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.1 : -0.1;
+            zoomScale = Math.min(Math.max(zoomScale + delta, 0.3), 3.0);
+            updateTransform();
+        }, { passive: false });
+
+        // Touch Pinch Zoom
+        let touchStartDist = 0;
+        viewportStage.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                touchStartDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            } else if (e.touches.length === 1) {
+                isDragging = true;
+                startX = e.touches[0].clientX - panX;
+                startY = e.touches[0].clientY - panY;
+            }
+        });
+
+        viewportStage.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const factor = dist / touchStartDist;
+                zoomScale = Math.min(Math.max(zoomScale * factor, 0.3), 3.0);
+                touchStartDist = dist;
+                updateTransform();
+            } else if (e.touches.length === 1 && isDragging) {
+                panX = e.touches[0].clientX - startX;
+                panY = e.touches[0].clientY - startY;
+                updateTransform();
+            }
+        });
+
+        viewportStage.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Fullscreen Toggle
+        window.toggleFullscreen = function() {
+            if (!document.fullscreenElement) {
+                viewportStage.requestFullscreen().catch(err => alert(err.message));
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // Node Inspector Drawer Logic
+        window.inspectNode = function(nodeKey) {
+            const data = window.NODES_DB[nodeKey];
+            if (!data) return;
+
+            document.getElementById('drawerNodeName').innerText = data.name;
+            document.getElementById('drawerHostname').innerText = `hostname: ${data.hostname}`;
+            document.getElementById('drawerIP').innerText = data.ip;
+            document.getElementById('drawerContainer').innerText = data.container;
+            
+            // Subnet badges
+            const subnetsContainer = document.getElementById('drawerSubnets');
+            subnetsContainer.innerHTML = '';
+            (Array.isArray(data.subnets) ? data.subnets : [data.subnets]).forEach(sub => {
+                const span = document.createElement('span');
+                span.className = 'badge-tag zone';
+                span.innerText = sub;
+                subnetsContainer.appendChild(span);
+            });
+
+            document.getElementById('drawerRole').innerText = data.role;
+            document.getElementById('drawerTech').innerText = data.tech;
+            document.getElementById('drawerPorts').innerText = data.ports;
+            document.getElementById('drawerVuln').innerText = data.vuln.replace(/\\n/g, '\n');
+            document.getElementById('drawerCreds').innerText = data.creds;
+            document.getElementById('drawerDockerCmd').innerText = data.docker_cmd;
+
+            // Avatar icon
+            const avatar = document.getElementById('drawerAvatar');
+            if (nodeKey.includes('DB') || nodeKey.includes('SAN')) avatar.innerText = '🗄️';
+            else if (nodeKey.includes('FW') || nodeKey.includes('WAF') || nodeKey.includes('ZTNA')) avatar.innerText = '🛡️';
+            else if (nodeKey.includes('Cloud')) avatar.innerText = '☁️';
+            else if (nodeKey.includes('Router') || nodeKey.includes('Spine') || nodeKey.includes('Leaf')) avatar.innerText = '🔀';
+            else if (nodeKey.includes('PC')) avatar.innerText = '💻';
+            else avatar.innerText = '🌐';
+
+            document.getElementById('nodeInspector').classList.add('open');
+        };
+
+        window.closeInspector = function() {
+            document.getElementById('nodeInspector').classList.remove('open');
+        };
+
+        // Copy Helper & Toast
+        window.copyText = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('toastMsg');
+                toast.innerText = `Copied: ${text}`;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2200);
+            });
+        };
+
+        // Search & Real-Time Highlight
+        window.handleSearch = function(query) {
+            query = query.toLowerCase().trim();
+            const nodes = document.querySelectorAll('.panzoom-pane.active svg .node');
+            
+            nodes.forEach(node => {
+                const text = node.textContent.toLowerCase();
+                const id = node.id || '';
+                
+                if (query.length > 0) {
+                    let matched = text.includes(query) || id.toLowerCase().includes(query);
+                    // Match with DB attributes too
+                    for (const [k, d] of Object.entries(window.NODES_DB)) {
+                        if (id.includes(k) || text.includes(d.name.toLowerCase())) {
+                            if (d.ip.toLowerCase().includes(query) || d.container.toLowerCase().includes(query) || d.role.toLowerCase().includes(query) || d.ports.toLowerCase().includes(query)) {
+                                matched = true;
+                            }
+                        }
+                    }
+                    
+                    if (matched) {
+                        node.classList.add('highlighted');
+                        node.classList.remove('dimmed');
+                    } else {
+                        node.classList.remove('highlighted');
+                        node.classList.add('dimmed');
+                    }
+                } else {
+                    node.classList.remove('highlighted');
+                    node.classList.remove('dimmed');
+                }
+            });
+        };
+
+        // Zone Filtering (Highlights zone and dims everything else)
+        window.filterByZone = function(zone) {
+            document.querySelectorAll('.pill-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase().includes(zone.toLowerCase()) || (zone === 'ALL' && btn.innerText === 'All Zones'));
+            });
+
+            const nodes = document.querySelectorAll('.panzoom-pane.active svg .node');
+            if (zone === 'ALL') {
+                nodes.forEach(n => {
+                    n.classList.remove('highlighted');
+                    n.classList.remove('dimmed');
+                });
+                return;
+            }
+
+            nodes.forEach(node => {
+                const text = node.textContent.toLowerCase();
+                const id = node.id || '';
+                let matched = text.includes(zone.toLowerCase());
+
+                for (const [k, d] of Object.entries(window.NODES_DB)) {
+                    if (id.includes(k) || text.includes(d.name.toLowerCase())) {
+                        if (d.security_zone.toLowerCase().includes(zone.toLowerCase()) || d.subnets.some(s => s.toLowerCase().includes(zone.toLowerCase()))) {
+                            matched = true;
+                        }
+                    }
+                }
+
+                if (matched) {
+                    node.classList.add('highlighted');
+                    node.classList.remove('dimmed');
+                } else {
+                    node.classList.remove('highlighted');
+                    node.classList.add('dimmed');
+                }
+            });
+        };
+
+        // Attach Click Listeners to Rendered SVG Nodes
+        function attachNodeClickHandlers() {
+            const svgNodes = document.querySelectorAll('.panzoom-pane.active svg .node');
+            svgNodes.forEach(node => {
+                const text = node.textContent;
+                const id = node.id || '';
+                for (const key of Object.keys(window.NODES_DB)) {
+                    if (id.includes(key) || text.includes(key) || text.includes(window.NODES_DB[key].name) || text.includes(window.NODES_DB[key].container)) {
+                        node.style.cursor = 'pointer';
+                        node.onclick = (e) => {
+                            e.stopPropagation();
+                            inspectNode(key);
+                        };
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Keyboard Shortcut ('/' to search, 'Escape' to close drawer)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement.id !== 'nodeSearchInput') {
+                e.preventDefault();
+                document.getElementById('nodeSearchInput').focus();
+            } else if (e.key === 'Escape') {
+                closeInspector();
+                document.getElementById('nodeSearchInput').blur();
+            }
+        });
+
+        // Render all Mermaid diagrams explicitly on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await mermaid.run({
+                    nodes: document.querySelectorAll('.mermaid')
+                });
+                setTimeout(() => {
+                    fitToScreen();
+                    attachNodeClickHandlers();
+                }, 300);
+            } catch (err) {
+                console.error("Mermaid run error:", err);
+            }
+        });
     </script>
 </body>
 </html>
