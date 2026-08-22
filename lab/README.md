@@ -155,10 +155,10 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 | **MinIO Primary SAN** | [`http://localhost:9001`](http://localhost:9001) — `nexus_san_root` / `SuperS3cUr3_B4ckup_Vault_Pass_2026!` | ✅ | ✅ | ✅ |
 | **Grafana NMS Dashboard** | [`http://localhost:3000`](http://localhost:3000) — `nexus_nms_admin` / `NMS@Nexus2026!` | ❌ | ✅ | ✅ |
 | **DDoS Scrubbing Center** | [`http://localhost:8080`](http://localhost:8080) — Public proxy endpoint | ❌ | ✅ | ✅ |
-| **CCTV Camera Web Player** | [`http://localhost:8888`](http://localhost:8888) — No auth required | ❌ | ✅ | ✅ |
+| **CCTV Camera Web Player** | [`http://localhost:8888/nexus-lobby/`](http://localhost:8888/nexus-lobby/) — No auth required | ❌ | ✅ | ✅ |
 | **MinIO DR Backup SAN** | [`http://localhost:9003`](http://localhost:9003) — `nexus_dr_admin` / `DRBackup_Nexus@2026!` | ❌ | ✅ | ✅ |
 | **Cloud Microservice API** | [`http://localhost:8090`](http://localhost:8090) — Endpoints: `/api/v1/config`, `/api/v1/health` | ❌ | ❌ | ✅ |
-| **SaaS SSO Identity Portal** | [`https://localhost:8443`](https://localhost:8443) — Use employee domain credentials | ❌ | ❌ | ✅ |
+| **SaaS SSO Identity Portal** | [`http://localhost:8443`](http://localhost:8443) — Use employee domain credentials | ❌ | ❌ | ✅ |
 
 ---
 
