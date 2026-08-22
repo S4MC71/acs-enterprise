@@ -251,6 +251,7 @@ services:
       MINIO_ROOT_USER: nexus_san_root
       MINIO_ROOT_PASSWORD: "SuperS3cUr3_B4ckup_Vault_Pass_2026!"
     command: server /data --console-address ":9001"
+    ports: ["9001:9001"]
     networks:
       dc_net: { ipv4_address: 10.0.3.30 }
     volumes:
@@ -306,6 +307,7 @@ services:
     networks:
       isp2_net: { ipv4_address: 203.0.113.10 }
       wan_net:  { ipv4_address: 198.51.100.10 }
+      dmz_net:  { ipv4_address: 10.0.1.15     }
     profiles: [enterprise]
     restart: unless-stopped
 
@@ -318,7 +320,7 @@ services:
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.proxy_arp=1
-    ports: ["51820:51820/udp", "8443:8443"]
+    ports: ["51820:51820/udp", "8444:8443"]
     networks:
       dmz_net: { ipv4_address: 10.0.1.50 }
       vpn_net: { ipv4_address: 10.0.6.1  }
@@ -423,6 +425,7 @@ services:
       MINIO_ROOT_USER: nexus_dr_admin
       MINIO_ROOT_PASSWORD: "DRBackup_Nexus@2026!"
     command: server /data --console-address ":9003"
+    ports: ["9003:9003"]
     networks:
       dc_net: { ipv4_address: 10.0.3.35 }
     volumes:

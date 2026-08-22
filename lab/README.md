@@ -13,10 +13,7 @@
 2. [📥 2. Clone & Build Lab](#-2-clone--build-lab)
 3. [🚀 3. Starting the Lab (3 Modes)](#-3-starting-the-lab-3-modes)
 4. [🔍 4. Health Check & Verification](#-4-health-check--verification)
-5. [🌐 5. Mode-by-Mode Service Directory](#-5-mode-by-mode-service-directory)
-   - [Mode 1: Standard Infrastructure (`core` — 13 Nodes)](#mode-1-standard-infrastructure-core--13-nodes)
-   - [Mode 2: Advanced Enterprise (`enterprise` — 28 Nodes)](#mode-2-advanced-enterprise-enterprise--28-nodes)
-   - [Mode 3: Full Hybrid Cloud (`all` — 33 Nodes)](#mode-3-full-hybrid-cloud-all--33-nodes)
+5. [🌐 5. Complete Service & Feature Availability Matrix](#-5-complete-service--feature-availability-matrix)
 6. [💻 6. Gray-Box Workstation Shell Access](#-6-gray-box-workstation-shell-access)
 7. [🚩 7. CTF Flags Reference](#-7-ctf-flags-reference)
 8. [🧹 8. Lifecycle Management & Total Factory Cleanup](#-8-lifecycle-management--total-factory-cleanup)
@@ -83,7 +80,15 @@ docker compose --profile core --profile enterprise --profile cloud build
 
 ## 🚀 3. Starting the Lab (3 Modes)
 
-Choose your desired operational mode based on your system RAM:
+Choose your desired operational mode based on your available RAM. All containers use lightweight Alpine-based images — **actual RAM usage is far lower than traditional VMs:**
+
+| Mode | Actual Container RAM | Recommended Free RAM |
+|:---|:---:|:---:|
+| Mode 1 `core` — 13 containers | ~600 MB – 1 GB | **2 GB** |
+| Mode 2 `enterprise` — 28 containers | ~1.2 GB – 2 GB | **4 GB** |
+| Mode 3 `all` — 33 containers | ~1.5 GB – 2.5 GB | **6 GB** |
+
+> 💡 **Multiple students?** A single lab instance is shared — all students can attack simultaneously with no extra RAM. Only spin up separate instances if each student needs an isolated, independent environment.
 
 ### Windows (PowerShell)
 ```powershell
@@ -91,9 +96,9 @@ Choose your desired operational mode based on your system RAM:
 .\scripts\start-lab.ps1
 
 # Or launch directly by mode:
-.\scripts\start-lab.ps1 -Mode core          # 🛡️ Mode 1: Standard Lab (13 containers, ~4GB RAM)
-.\scripts\start-lab.ps1 -Mode enterprise    # 🏢 Mode 2: Advanced Enterprise (28 containers, ~8GB RAM)
-.\scripts\start-lab.ps1 -Mode all           # ☁️ Mode 3: Full Hybrid Cloud (33 containers, ~12GB RAM)
+.\scripts\start-lab.ps1 -Mode core          # 🛡️ Mode 1: Standard Lab  (13 containers, ~600 MB – 1 GB)
+.\scripts\start-lab.ps1 -Mode enterprise    # 🏢 Mode 2: Advanced Enterprise (28 containers, ~1.2 – 2 GB)
+.\scripts\start-lab.ps1 -Mode all           # ☁️ Mode 3: Full Hybrid Cloud (33 containers, ~1.5 – 2.5 GB)
 ```
 
 ### Linux / macOS (Bash)
@@ -135,84 +140,76 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 ---
 
-## 🌐 5. Mode-by-Mode Service Directory
+## 🌐 5. Complete Service & Feature Availability Matrix
+
+> **Legend:** ✅ Available | ❌ Not Available | 🌐 Browser URL | 💻 CLI Command / Protocol
 
 ---
 
-### Mode 1: Standard Infrastructure (`core` — 13 Nodes)
-> **Hardware:** 13 Containers | ~4 GB RAM | **Command:** `start-lab.ps1 -Mode core`  
-> **Scope:** Edge BGP Router, NGFW, DMZ Web Services, Core Active Directory, SIEM, Data Center Database & SAN, Campus Workstations.
+### 🌐 Browser Web Applications
 
-#### 🌐 Browser Web Applications
-| Application | URL | Role | Default Credentials |
-|:---|:---|:---|:---|
-| **Corporate Web Portal** | [`http://localhost:80`](http://localhost:80) | Flask Shipment Portal (behind WAF). Contains SQLi & CMDi. | `admin` / `NexusTechAdmin2026!` |
-| **MailHog Webmail** | [`http://localhost:8025`](http://localhost:8025) | Captures corporate emails and password reset tokens. | *No auth required* |
-| **MinIO Primary SAN** | [`http://localhost:9001`](http://localhost:9001) | S3-compatible primary storage console. | `nexus_san_root` / `SuperS3cUr3_B4ckup_Vault_Pass_2026!` |
-
-#### 🔌 CLI & Protocol Services
-| Service | Command / Connection | Port | Description |
-|:---|:---|:---|:---|
-| **SSH Bastion Jump Host** | `ssh devops-remote@localhost -p 2222` | `2222` (SSH) | Password: `devops-remote@123` *(Pivot into Core & Campus)* |
-| **PostgreSQL Crown Jewels** | `docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod` | `5432` | `nexus_admin` / `Nexu$$Prod2026!Sec` *(Contains Flag 3)* |
-| **Active Directory DC** | `smbclient -L //10.0.2.10 -N` | `445`, `389` | `Administrator` / `NexusAD2026!Admin` *(SMB shares)* |
-| **SIEM / SOC Collector** | `docker exec -it nexus-corp-siem-soc bash` | `514` | Blue-Team logs: `tail -f /var/log/nexus-syslog/nexus-all.log` |
-| **Internal ERP Intranet** | `http://10.0.3.10:8000` *(Internal DC)* | `8000` | Internal financial & payroll records |
-
-#### 🚩 CTF Flags in Mode 1
-- 🟢 **Flag 1 (SQLi):** `FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026}` — Web Portal `/?track_id=`
-- 🟡 **Flag 2 (CMDi):** `FLAG{CMD_INJ3CT10N_PORTAL_COMPR0M1S3D}` — Web Admin `/admin/server-check`
-- 🔴 **Flag 3 (Crown Jewels):** `FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}` — DB `system_vault_keys`
+| Application | How to Access | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
+|:---|:---|:---:|:---:|:---:|
+| **Corporate Web Portal** | [`http://localhost:80`](http://localhost:80) — `admin` / `NexusTechAdmin2026!` | ✅ | ✅ | ✅ |
+| **MailHog Webmail** | [`http://localhost:8025`](http://localhost:8025) — No auth required | ✅ | ✅ | ✅ |
+| **MinIO Primary SAN** | [`http://localhost:9001`](http://localhost:9001) — `nexus_san_root` / `SuperS3cUr3_B4ckup_Vault_Pass_2026!` | ✅ | ✅ | ✅ |
+| **Grafana NMS Dashboard** | [`http://localhost:3000`](http://localhost:3000) — `nexus_nms_admin` / `NMS@Nexus2026!` | ❌ | ✅ | ✅ |
+| **DDoS Scrubbing Center** | [`http://localhost:8080`](http://localhost:8080) — Public proxy endpoint | ❌ | ✅ | ✅ |
+| **CCTV Camera Web Player** | [`http://localhost:8888`](http://localhost:8888) — No auth required | ❌ | ✅ | ✅ |
+| **MinIO DR Backup SAN** | [`http://localhost:9003`](http://localhost:9003) — `nexus_dr_admin` / `DRBackup_Nexus@2026!` | ❌ | ✅ | ✅ |
+| **Cloud Microservice API** | [`http://localhost:8090`](http://localhost:8090) — Endpoints: `/api/v1/config`, `/api/v1/health` | ❌ | ❌ | ✅ |
+| **SaaS SSO Identity Portal** | [`https://localhost:8443`](https://localhost:8443) — Use employee domain credentials | ❌ | ❌ | ✅ |
 
 ---
 
-### Mode 2: Advanced Enterprise (`enterprise` — 28 Nodes)
-> **Hardware:** 28 Containers | ~8 GB RAM | **Command:** `start-lab.ps1 -Mode enterprise`  
-> **Scope:** **Everything in Mode 1 +** Dual ISP BGP, DDoS Proxy, WireGuard ZTNA, VoIP PBX, CCTV RTSP, IoT MQTT, NAC 802.1X, Spine-Leaf Fabric & Branch SD-WAN.
+### 💻 CLI & Protocol Services
 
-#### 🌐 Additional Browser Web Applications
-| Application | URL | Role | Default Credentials |
-|:---|:---|:---|:---|
-| **Grafana NMS Dashboard** | [`http://localhost:3000`](http://localhost:3000) | Real-time network telemetry, switch metrics & traffic monitor. | `nexus_nms_admin` / `NMS@Nexus2026!` *(Anonymous Viewer enabled)* |
-| **DDoS Scrubbing Center** | [`http://localhost:8080`](http://localhost:8080) | Nginx traffic rate-limiting & DDoS mitigation proxy. | *Public proxy endpoint* |
-| **CCTV Camera Web Player** | [`http://localhost:8888`](http://localhost:8888) | Live in-browser HLS video surveillance player. | *No auth required* |
-| **MinIO DR Backup SAN** | [`http://localhost:9003`](http://localhost:9003) | Disaster recovery secondary backup vault console. | `nexus_dr_admin` / `DRBackup_Nexus@2026!` |
-
-#### 🔌 Additional Protocol Services
-| Service | Command / Connection | Port | Description |
-|:---|:---|:---|:---|
-| **Asterisk VoIP PBX** | Softphone (Zoiper/Linphone) or `svcrack` | `5060` (SIP) | Exts: `1001`, `1002`, `1003` (Pass: `1234`), Conf: `9000` |
-| **CCTV RTSP Stream** | VLC Player: `rtsp://localhost:8554/nexus-lobby` | `8554` (RTSP) | Unauthenticated live video feed |
-| **Campus IoT MQTT** | `mosquitto_sub -h localhost -p 1883 -t '#'` | `1883` (MQTT) | Unauthenticated broker leaking DC IP alerts |
-| **NAC ISE Server** | `curl http://10.0.2.15:8100/api/bypass` | `8100` (HTTP) | Cisco ISE simulation (Vulnerable to MAC Bypass) |
-| **WireGuard ZTNA** | WireGuard client on port `51820/udp` | `51820`, `8443` | Encrypted Zero-Trust remote worker VPN |
-| **Spine-Leaf Fabric** | 4 Switch containers (`dc-spine-1/2`, `dc-leaf-1/2`) | BGP-EVPN | High-speed Data Center switching fabric |
-
-#### 🚩 Additional CTF Flag in Mode 2
-- 🟢 **Flag 6 (NAC Bypass):** `FLAG{NAC_M4C_BYPA55_802_1X_C1RC_UMVENT3D_2026}` — NAC Server `/api/bypass`
+| Service | How to Access | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
+|:---|:---|:---:|:---:|:---:|
+| **SSH Bastion Jump Host** | `ssh devops-remote@localhost -p 2222` — Pass: `devops-remote@123` | ✅ | ✅ | ✅ |
+| **PostgreSQL Crown Jewels** | `docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod` | ✅ | ✅ | ✅ |
+| **Active Directory DC** | `smbclient -L //10.0.2.10 -N` — `Administrator` / `NexusAD2026!Admin` | ✅ | ✅ | ✅ |
+| **SIEM / SOC Collector** | `docker exec -it nexus-corp-siem-soc bash` — `tail -f /var/log/nexus-syslog/nexus-all.log` | ✅ | ✅ | ✅ |
+| **Internal ERP Intranet** | `http://10.0.3.10:8000` *(Internal DC — pivot required)* | ✅ | ✅ | ✅ |
+| **Asterisk VoIP PBX** | Softphone (Zoiper/Linphone) on `5060/SIP` — Exts: `1001`-`1003`, Pass: `1234` | ❌ | ✅ | ✅ |
+| **CCTV RTSP Stream** | VLC: `rtsp://localhost:8554/nexus-lobby` | ❌ | ✅ | ✅ |
+| **Campus IoT MQTT** | `mosquitto_sub -h localhost -p 1883 -t '#'` | ❌ | ✅ | ✅ |
+| **NAC ISE Server** | `curl http://10.0.2.15:8100/api/bypass` | ❌ | ✅ | ✅ |
+| **WireGuard ZTNA VPN** | WireGuard client — `51820/UDP` | ❌ | ✅ | ✅ |
+| **Spine-Leaf Fabric** | Internal BGP-EVPN — Containers: `dc-spine-1/2`, `dc-leaf-1/2` | ❌ | ✅ | ✅ |
+| **Cloud Transit Gateway** | AWS TGW / Azure VNet Peering — `172.16.0.1` / `10.0.3.251` | ❌ | ❌ | ✅ |
+| **Cloud Load Balancer** | HAProxy ALB — `172.16.0.10` | ❌ | ❌ | ✅ |
+| **Cloud Managed RDS DB** | PostgreSQL — `172.16.0.30:5432` — `nexus_rds_admin` / `RdsNexusProd@2026!Cloud` | ❌ | ❌ | ✅ |
 
 ---
 
-### Mode 3: Full Hybrid Cloud (`all` — 33 Nodes)
-> **Hardware:** 33 Containers | ~12 GB RAM | **Command:** `start-lab.ps1 -Mode all`  
-> **Scope:** **Everything in Mode 1 & 2 +** AWS/Azure Cloud VPC Peering, Transit Gateway, Cloud ALB, Cloud SSRF Microservices, Cloud RDS PostgreSQL & SaaS SSO.
+### 🚩 CTF Flags Availability
 
-#### 🌐 Additional Cloud Web Applications
-| Application | URL | Role | Default Credentials |
-|:---|:---|:---|:---|
-| **Cloud Microservice API** | [`http://localhost:8090`](http://localhost:8090) | Cloud microservice API. Vulnerable to SSRF (`/api/v1/fetch?url=`). | Endpoints: `/api/v1/config`, `/api/v1/health` |
-| **SaaS SSO Identity Portal** | [`https://localhost:8443`](https://localhost:8443) | Corporate SAML/OAuth2 Single Sign-On Portal. Target for auth bypass. | Use employee domain credentials |
+| Flag | Vulnerability | Target | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
+|:---|:---|:---|:---:|:---:|:---:|
+| 🟢 **Flag 1** — SQLi | `/?track_id=` SQL Injection | Corporate Web Portal | ✅ | ✅ | ✅ |
+| 🟡 **Flag 2** — CMDi | `/admin/server-check` Command Injection | Web Admin Panel | ✅ | ✅ | ✅ |
+| 🔴 **Flag 3** — Crown Jewels | `system_vault_keys` DB table | Production PostgreSQL | ✅ | ✅ | ✅ |
+| 🟢 **Flag 6** — NAC Bypass | `/api/bypass` MAC Auth Bypass | NAC ISE Server | ❌ | ✅ | ✅ |
+| 🔴 **Flag 4** — Cloud SSRF | `/api/v1/fetch?url=` SSRF | Cloud Microservice | ❌ | ❌ | ✅ |
+| 🟡 **Flag 5** — SaaS SSO | Auth Bypass `/dashboard` | SaaS SSO Portal | ❌ | ❌ | ✅ |
 
-#### 🔌 Additional Cloud Infrastructure
-| Service | Access / Role | Subnet / IP | Description |
-|:---|:---|:---|:---|
-| **Cloud Transit Gateway** | AWS TGW / Azure VNet Peering | `172.16.0.1` / `10.0.3.251` | Secure peering bridge between on-prem DC and Cloud VPC |
-| **Cloud Load Balancer** | HAProxy Application Load Balancer | `172.16.0.10` | Distributes cloud traffic to microservice pods |
-| **Cloud Managed RDS DB** | PostgreSQL Cloud Database | `172.16.0.30:5432` | `nexus_rds_admin` / `RdsNexusProd@2026!Cloud` |
+---
 
-#### 🚩 Additional CTF Flags in Mode 3
-- 🔴 **Flag 4 (Cloud SSRF):** `FLAG{CL0UD_T13R_C0MPR0M1S3D_AWS_NEXUS_2026!}` — Cloud App `/api/v1/secrets`
-- 🟡 **Flag 5 (SaaS SSO):** `FLAG{SAAS_SS0_C0RPO_ID3NT1TY_BYPASSD_2026}` — SaaS SSO `/dashboard`
+### 📊 Mode Summary
+
+| | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
+|:---|:---:|:---:|:---:|
+| **Containers** | 13 | 28 | 33 |
+| **Container RAM (actual)** | ~600 MB – 1 GB | ~1.2 GB – 2 GB | ~1.5 GB – 2.5 GB |
+| **Recommended Free RAM** | **2 GB** | **4 GB** | **6 GB** |
+| **Web Apps** | 3 | 7 | 9 |
+| **CLI/Protocol Services** | 5 | 11 | 14 |
+| **CTF Flags** | 3 | 4 | 6 |
+| **Start Command (Windows)** | `.\scripts\start-lab.ps1 -Mode core` | `.\scripts\start-lab.ps1 -Mode enterprise` | `.\scripts\start-lab.ps1 -Mode all` |
+| **Start Command (Linux/macOS)** | `docker compose --profile core up -d` | `docker compose --profile core --profile enterprise up -d` | `docker compose --profile core --profile enterprise --profile cloud up -d` |
+
+> 👥 **Multi-Student Setup:** One lab instance can serve an **unlimited number of students simultaneously** — they all connect to the same shared environment. Separate instances are only needed if students require fully isolated labs (multiply RAM by the number of instances).
 
 ---
 
@@ -340,8 +337,10 @@ After a total wipe, recreate everything cleanly in one step:
   Check conflicting processes: `netstat -ano | findstr :80` (Windows) or `sudo lsof -i :80` (Linux). Stop local IIS / Apache / Nginx if running.
 - **WireGuard / ZTNA container error on Windows:**  
   Ensure WSL2 is the default backend: `wsl --set-default-version 2`.
-- **Low RAM Warning:**  
-  If your PC has ≤ 8 GB RAM, stick to **Mode 1 (`core`)** for smooth performance.
+- **RAM & Performance:**  
+  Containers use lightweight Alpine images — actual RAM is much lower than expected. A machine with **4 GB free RAM** can comfortably run **Mode 3 (all 33 containers)**. If you see container OOM crashes, run `docker stats` to identify the offender and reduce load by switching to a lower mode.
+- **Multiple Students / Shared Lab:**  
+  All students can use a **single shared instance** simultaneously. Only start separate instances if isolated environments are required; in that case, budget **~2 GB per Mode 1 instance** or **~4 GB per Mode 2 instance**.
 
 ---
 

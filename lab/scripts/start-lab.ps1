@@ -119,7 +119,7 @@ if ($exitCode -eq 0) {
 
     if ($profiles -match "enterprise") {
         Write-Host "  Grafana NMS:        http://localhost:3000     (nexus_nms_admin / NMS@Nexus2026!)"
-        Write-Host "  ZTNA Info:          http://localhost:8443"
+        Write-Host "  ZTNA Info:          http://localhost:8444"
         Write-Host "  VoIP PBX:           sip:1003@localhost:5060   (password: 1234)"
         Write-Host "  IP Cameras RTSP:    rtsp://localhost:8554/nexus-lobby"
         Write-Host "  IP Cameras HLS:     http://localhost:8888/nexus-lobby/"
