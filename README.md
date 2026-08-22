@@ -80,7 +80,15 @@ docker compose --profile core --profile enterprise --profile cloud build
 
 ## 🚀 3. Starting the Lab (3 Modes)
 
-Choose your desired operational mode based on your system RAM:
+Choose your desired operational mode based on your available RAM. All containers use lightweight Alpine-based images — **actual RAM usage is far lower than traditional VMs:**
+
+| Mode | Actual Container RAM | Recommended Free RAM |
+|:---|:---:|:---:|
+| Mode 1 `core` — 13 containers | ~600 MB – 1 GB | **2 GB** |
+| Mode 2 `enterprise` — 28 containers | ~1.2 GB – 2 GB | **4 GB** |
+| Mode 3 `all` — 33 containers | ~1.5 GB – 2.5 GB | **6 GB** |
+
+> 💡 **Multiple students?** A single lab instance is shared — all students can attack simultaneously with no extra RAM. Only spin up separate instances if each student needs an isolated, independent environment.
 
 ### Windows (PowerShell)
 ```powershell
@@ -88,9 +96,9 @@ Choose your desired operational mode based on your system RAM:
 .\scripts\start-lab.ps1
 
 # Or launch directly by mode:
-.\scripts\start-lab.ps1 -Mode core          # 🛡️ Mode 1: Standard Lab (13 containers, ~4GB RAM)
-.\scripts\start-lab.ps1 -Mode enterprise    # 🏢 Mode 2: Advanced Enterprise (28 containers, ~8GB RAM)
-.\scripts\start-lab.ps1 -Mode all           # ☁️ Mode 3: Full Hybrid Cloud (33 containers, ~12GB RAM)
+.\scripts\start-lab.ps1 -Mode core          # 🛡️ Mode 1: Standard Lab  (13 containers, ~600 MB – 1 GB)
+.\scripts\start-lab.ps1 -Mode enterprise    # 🏢 Mode 2: Advanced Enterprise (28 containers, ~1.2 – 2 GB)
+.\scripts\start-lab.ps1 -Mode all           # ☁️ Mode 3: Full Hybrid Cloud (33 containers, ~1.5 – 2.5 GB)
 ```
 
 ### Linux / macOS (Bash)
@@ -193,12 +201,15 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 | | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
 |:---|:---:|:---:|:---:|
 | **Containers** | 13 | 28 | 33 |
-| **RAM Required** | ~4 GB | ~8 GB | ~12 GB |
+| **Container RAM (actual)** | ~600 MB – 1 GB | ~1.2 GB – 2 GB | ~1.5 GB – 2.5 GB |
+| **Recommended Free RAM** | **2 GB** | **4 GB** | **6 GB** |
 | **Web Apps** | 3 | 7 | 9 |
 | **CLI/Protocol Services** | 5 | 11 | 14 |
 | **CTF Flags** | 3 | 4 | 6 |
-| **Start Command (Windows)** | `.\\scripts\\start-lab.ps1 -Mode core` | `.\\scripts\\start-lab.ps1 -Mode enterprise` | `.\\scripts\\start-lab.ps1 -Mode all` |
+| **Start Command (Windows)** | `.\scripts\start-lab.ps1 -Mode core` | `.\scripts\start-lab.ps1 -Mode enterprise` | `.\scripts\start-lab.ps1 -Mode all` |
 | **Start Command (Linux/macOS)** | `docker compose --profile core up -d` | `docker compose --profile core --profile enterprise up -d` | `docker compose --profile core --profile enterprise --profile cloud up -d` |
+
+> 👥 **Multi-Student Setup:** One lab instance can serve an **unlimited number of students simultaneously** — they all connect to the same shared environment. Separate instances are only needed if students require fully isolated labs (multiply RAM by the number of instances).
 
 ---
 
@@ -326,8 +337,10 @@ After a total wipe, recreate everything cleanly in one step:
   Check conflicting processes: `netstat -ano | findstr :80` (Windows) or `sudo lsof -i :80` (Linux). Stop local IIS / Apache / Nginx if running.
 - **WireGuard / ZTNA container error on Windows:**  
   Ensure WSL2 is the default backend: `wsl --set-default-version 2`.
-- **Low RAM Warning:**  
-  If your PC has ≤ 8 GB RAM, stick to **Mode 1 (`core`)** for smooth performance.
+- **RAM & Performance:**  
+  Containers use lightweight Alpine images — actual RAM is much lower than expected. A machine with **4 GB free RAM** can comfortably run **Mode 3 (all 33 containers)**. If you see container OOM crashes, run `docker stats` to identify the offender and reduce load by switching to a lower mode.
+- **Multiple Students / Shared Lab:**  
+  All students can use a **single shared instance** simultaneously. Only start separate instances if isolated environments are required; in that case, budget **~2 GB per Mode 1 instance** or **~4 GB per Mode 2 instance**.
 
 ---
 
