@@ -465,6 +465,27 @@
             user-select: none;
         }
 
+        /* Drawer Backdrop Overlay */
+        .drawer-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 95;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .drawer-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         /* Node Inspector Side Drawer */
         .inspector-drawer {
             position: fixed;
@@ -725,13 +746,13 @@
         <!-- Mode Navigation -->
         <div class="mode-nav">
             <button id="btnCore" class="mode-btn active" onclick="switchLabMode('core')">
-                🛡️ Standard Infrastructure <span class="count-badge">13 Nodes</span>
+                🛡️ Standard Infrastructure <span class="count-badge">15 Nodes</span>
             </button>
             <button id="btnEnterprise" class="mode-btn" onclick="switchLabMode('enterprise')">
-                🏢 Advanced Enterprise <span class="count-badge">28 Nodes</span>
+                🏢 Advanced Enterprise <span class="count-badge">31 Nodes</span>
             </button>
             <button id="btnAll" class="mode-btn" onclick="switchLabMode('all')">
-                ☁️ Comprehensive Cloud <span class="count-badge">33 Nodes</span>
+                ☁️ Comprehensive Cloud <span class="count-badge">36 Nodes</span>
             </button>
         </div>
 
@@ -739,7 +760,7 @@
         <div class="hud-metrics">
             <div class="metric-item">
                 <span class="metric-label">Active Nodes</span>
-                <span id="metricNodes" class="metric-val">13</span>
+                <span id="metricNodes" class="metric-val">15</span>
             </div>
             <div class="metric-item">
                 <span class="metric-label">Subnets</span>
@@ -803,6 +824,7 @@ flowchart TD
         WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
         MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
         Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
+        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
     end
     
     subgraph Core ["Core Backbone (10.0.2.0/24)"]
@@ -827,6 +849,7 @@ flowchart TD
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
+    HQFW <--> DMZExposed
     WAF <--> WebPortal
     
     HQFW <==> ADDC
@@ -844,9 +867,13 @@ flowchart TD
     classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
     classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px;
     classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
     
     class ProdDB,SAN database;
     class HQFW firewall;
+    class Internet internet;
+    class WAF,WebPortal,MailServer web;
+    class DMZExposed warning;
     class Internet internet;
     class WebPortal,ERP,MailServer web;
 
@@ -901,12 +928,14 @@ flowchart TD
         MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
         Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
         ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
     end
 
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
     HQFW <--> ZTNA
+    HQFW <--> DMZExposed
     WAF <--> WebPortal
     VPNClients -.-> ZTNA
 
@@ -966,11 +995,13 @@ flowchart TD
     classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
     classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
     classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
     
     class Internet,ISP1,ISP2,DDoS ext;
     class HQFW,WAF,ZTNA,SIEM,NAC security;
     class ProdDB,SAN,DRSAN database;
     class Spine1,Spine2,Leaf1,Leaf2 switch;
+    class DMZExposed warning;
 
                     </div>
                 </div>
@@ -1038,12 +1069,14 @@ flowchart TD
         MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
         Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
         ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
     end
 
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
     HQFW <--> ZTNA
+    HQFW <--> DMZExposed
     WAF <--> WebPortal
     VPNClients -.-> ZTNA
 
@@ -1107,12 +1140,14 @@ flowchart TD
     classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
     classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px;
     classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
     
     class Internet,ISP1,ISP2,DDoS ext;
     class HQFW,WAF,ZTNA,SIEM,NAC security;
     class ProdDB,SAN,DRSAN,CloudDB database;
     class CloudTGW,CloudLB,CloudApp,SaaS cloud;
     class Spine1,Spine2,Leaf1,Leaf2 switch;
+    class DMZExposed warning;
 
                     </div>
                 </div>
@@ -1139,8 +1174,12 @@ flowchart TD
         <span><span class="legend-dot" style="background:#8b5cf6"></span>Data Center & Databases</span>
         <span><span class="legend-dot" style="background:#38bdf8"></span>Cloud VPC Tier</span>
         <span><span class="legend-dot" style="background:#6366f1"></span>Spine-Leaf Switches</span>
+        <span><span class="legend-dot" style="background:#f59e0b"></span>Vulnerable Entry Points (Black-Box)</span>
         <span>💡 <em>Click any node on the diagram to inspect its ports, IP & CTF attack surface! Drag to Pan, Scroll to Zoom.</em></span>
     </div>
+
+    <!-- Drawer Backdrop Overlay -->
+    <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeInspector()"></div>
 
     <!-- Node Inspector Side Drawer -->
     <div id="nodeInspector" class="inspector-drawer">
@@ -1228,7 +1267,46 @@ flowchart TD
         });
 
         // Container Node Database
-        window.NODES_DB = {"Internet": {"name": "Public Internet & WAN", "container": "wan-cloud-backbone", "hostname": "internet-wan-cloud", "ip": "198.51.100.0/24 & 203.0.113.0/24", "subnets": ["WAN (198.51.100.0/24)", "ISP2 (203.0.113.0/24)"], "role": "Public Internet, Dual ISP BGP Uplinks & External Traffic Simulator", "ports": "BGP, DNS, Transit", "tech": "BGP Simulation / Docker Bridge", "security_zone": "WAN", "vuln": "Simulates internet routing and external black-box attack origin.", "creds": "Public Internet Gateway", "docker_cmd": "# External network simulator"}, "ISP1": {"name": "ISP 1 Primary Uplink", "container": "nexus-wan-isp1", "hostname": "isp1-transit", "ip": "198.51.100.0/24", "subnets": ["WAN (198.51.100.0/24)"], "role": "Primary Corporate Internet Service Provider (BGP AS 65001)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Primary inbound link for corporate traffic and web portal users.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 1 Uplink node"}, "ISP2": {"name": "ISP 2 Secondary Uplink", "container": "nexus-wan-isp2", "hostname": "isp2-transit", "ip": "203.0.113.0/24", "subnets": ["ISP2 (203.0.113.0/24)"], "role": "Secondary Redundant Internet Service Provider (BGP AS 65002)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Failover path and branch office SD-WAN connectivity provider.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 2 Uplink node"}, "EdgeRouter": {"name": "Edge Router A (BGP)", "container": "nexus-edge-router", "hostname": "edge-gw-01", "ip": "198.51.100.1 / 10.0.1.1", "subnets": ["WAN (198.51.100.0/24)", "DMZ (10.0.1.0/24)"], "role": "Primary BGP Edge Gateway & WAN Router (ISP1)", "ports": "BGP / NAT Routing (Internal)", "tech": "Debian Linux + Quagga/FRR BGP Routing", "security_zone": "WAN", "vuln": "Boundary router, routes traffic between WAN and DMZ.", "creds": "Managed via network automation / Docker root", "docker_cmd": "docker exec -it nexus-edge-router bash"}, "HQFW": {"name": "HQ Next-Gen Firewall", "container": "nexus-hq-firewall", "hostname": "fw-perimeter-01", "ip": "10.0.1.254, 10.0.2.1, 10.0.3.1, 10.0.4.1", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "DC (10.0.3.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed Stateful Perimeter Firewall", "ports": "iptables Stateful Packet Inspection", "tech": "iptables + IP Forwarding Engine", "security_zone": "DMZ", "vuln": "Enforces strict inter-VLAN zoning rules and segment isolation.", "creds": "NET_ADMIN privileged container", "docker_cmd": "docker exec -it nexus-hq-firewall bash"}, "WAF": {"name": "Nginx WAF & Reverse Proxy", "container": "nexus-corp-waf-proxy", "hostname": "srv-waf-proxy", "ip": "10.0.1.10", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Web Application Firewall & Reverse Proxy", "ports": "Host 80 -> Container 80", "tech": "Nginx 1.25 Alpine Reverse Proxy", "security_zone": "DMZ", "vuln": "Proxies requests to Corporate Web Portal; initial target for external recon.", "creds": "Public Web Service (http://localhost:80)", "docker_cmd": "docker exec -it nexus-corp-waf-proxy sh"}, "WebPortal": {"name": "Corporate Web Portal", "container": "nexus-corp-web-portal", "hostname": "srv-dmz-web01", "ip": "10.0.1.20", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Customer & Shipment Portal (Flask App)", "ports": "Container 5000 (Proxied by WAF)", "tech": "Python 3.11 Flask + SQLite3", "security_zone": "DMZ", "vuln": "1. SQL Injection on `/?track_id=` (Flag 1)\\n2. Command Injection in `/admin/server-check` (Flag 2)", "creds": "admin / NexusTechAdmin2026!", "docker_cmd": "docker exec -it nexus-corp-web-portal bash"}, "MailServer": {"name": "Corporate Mail Server", "container": "nexus-corp-mail-server", "hostname": "srv-mail-01", "ip": "10.0.1.30", "subnets": ["DMZ (10.0.1.0/24)"], "role": "MailHog SMTP & Webmail Testing Server", "ports": "Host 8025:8025 (Web UI), Host 1025:1025 (SMTP)", "tech": "MailHog Go SMTP Engine", "security_zone": "DMZ", "vuln": "Unauthenticated Webmail UI on port 8025; captures internal password resets.", "creds": "Web UI: http://localhost:8025 (No auth)", "docker_cmd": "docker exec -it nexus-corp-mail-server sh"}, "Bastion": {"name": "SSH Bastion Jump Host", "container": "nexus-corp-bastion", "hostname": "bastion", "ip": "10.0.1.40 (DMZ), 10.0.2.5 (Core), 10.0.4.5 (Campus)", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed SSH Secure Jump Host", "ports": "Host 2222 -> Container 22", "tech": "OpenSSH Server on Alpine", "security_zone": "DMZ", "vuln": "Direct pivot route from external network into Core and Campus subnets.", "creds": "devops-remote / devops-remote@123", "docker_cmd": "ssh devops-remote@localhost -p 2222"}, "ADDC": {"name": "Active Directory DC", "container": "nexus-ad-dc", "hostname": "dc01", "ip": "10.0.2.10", "subnets": ["Core (10.0.2.0/24)"], "role": "Samba4 AD Domain Controller & SMB Share", "ports": "SMB (445), LDAP (389), Kerberos (88)", "tech": "Samba 4 AD DC", "security_zone": "Core", "vuln": "Unauthenticated SMB share enum reveals `sync_prod_db.sh` containing DB root password.", "creds": "Domain Admin: Administrator / NexusAD2026!Admin", "docker_cmd": "docker exec -it nexus-ad-dc bash"}, "SIEM": {"name": "SIEM / SOC Collector", "container": "nexus-corp-siem-soc", "hostname": "siem-soc-01", "ip": "10.0.2.99", "subnets": ["Core (10.0.2.0/24)"], "role": "Central Rsyslog Security Event Collector", "ports": "Syslog UDP/TCP 514", "tech": "Rsyslog Daemon + SOC audit log parser", "security_zone": "Core", "vuln": "Contains pre-seeded event logs for Blue-Team and incident response forensics.", "creds": "Blue-Team entry point (Root)", "docker_cmd": "docker exec -it nexus-corp-siem-soc bash"}, "ProdDB": {"name": "Production PostgreSQL DB", "container": "nexus-dc-prod-database", "hostname": "db-prod-01", "ip": "10.0.3.20", "subnets": ["DC (10.0.3.0/24)"], "role": "Crown Jewels Enterprise Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "DC", "vuln": "Contains `system_vault_keys` table with Flag 3 (Crown Jewels CTF).", "creds": "nexus_admin / Nexu$$Prod2026!Sec (DB: nexus_prod)", "docker_cmd": "docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod"}, "ERP": {"name": "Internal ERP Intranet", "container": "nexus-dc-internal-erp", "hostname": "srv-erp-01", "ip": "10.0.3.10", "subnets": ["DC (10.0.3.0/24)"], "role": "Enterprise Resource Planning & Payroll Portal", "ports": "HTTP 8000 (Internal DC)", "tech": "Python 3.11 Flask + PostgreSQL Client", "security_zone": "DC", "vuln": "Internal financial records; connects directly to Production Database.", "creds": "Internal employee domain credentials", "docker_cmd": "docker exec -it nexus-dc-internal-erp bash"}, "SAN": {"name": "MinIO SAN Primary Storage", "container": "nexus-dc-backup-storage", "hostname": "san-backup-01", "ip": "10.0.3.30", "subnets": ["DC (10.0.3.0/24)"], "role": "Primary S3-Compatible Object Storage SAN", "ports": "Container 9000 (S3 API), 9001 (Console)", "tech": "MinIO Distributed Object Storage", "security_zone": "DC", "vuln": "Stores encrypted and raw backups of internal corporate data.", "creds": "nexus_san_root / SuperS3cUr3_B4ckup_Vault_Pass_2026!", "docker_cmd": "docker exec -it nexus-dc-backup-storage sh"}, "DevPC": {"name": "DevOps Workstation", "container": "nexus-pc-dev-01", "hostname": "dev-workstation-01", "ip": "10.0.4.20", "subnets": ["Campus (10.0.4.0/24)"], "role": "DevOps Engineer PC (tahmed) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Docker client, Git, Dev tools", "security_zone": "Campus", "vuln": "Pre-configured developer workstation with git repo history & SSH keys.", "creds": "tahmed / DevOpsP@ss2026!", "docker_cmd": "docker exec -it nexus-pc-dev-01 bash"}, "HRPC": {"name": "HR Workstation", "container": "nexus-pc-hr-01", "hostname": "hr-workstation-01", "ip": "10.0.4.10", "subnets": ["Campus (10.0.4.0/24)"], "role": "HR Director PC (sjenkins) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Office Tools", "security_zone": "Campus", "vuln": "Contains internal HR employee rosters, salary data, and policy docs.", "creds": "sjenkins / HrDirector9921!", "docker_cmd": "docker exec -it nexus-pc-hr-01 bash"}, "ISP2Router": {"name": "ISP2 BGP Router", "container": "nexus-isp2-router", "hostname": "isp2-gw-01", "ip": "203.0.113.1 (ISP2), 198.51.100.2 (WAN), 10.0.1.2 (DMZ)", "subnets": ["ISP2 (203.0.113.0/24)", "WAN", "DMZ"], "role": "Secondary Uplink Router (Dual-Homed Redundancy)", "ports": "BGP / OSPF / Routing", "tech": "Debian + Quagga/FRR Routing", "security_zone": "WAN", "vuln": "Secondary WAN path; handles failover and branch SD-WAN connections.", "creds": "Network Admin privileged access", "docker_cmd": "docker exec -it nexus-isp2-router bash"}, "DDoS": {"name": "DDoS Scrubbing Center", "container": "nexus-ddos-proxy", "hostname": "ddos-scrub-01", "ip": "203.0.113.10 / 198.51.100.10", "subnets": ["ISP2 (203.0.113.0/24)", "WAN (198.51.100.0/24)"], "role": "Cloud DDoS Mitigation & Traffic Scrubbing", "ports": "Host 8080 -> Container 80", "tech": "Nginx Rate-Limiting & Traffic Inspection Proxy", "security_zone": "WAN", "vuln": "Simulates Cloudflare / Akamai scrubbing; rate-limits brute-force attacks.", "creds": "Public Proxy http://localhost:8080", "docker_cmd": "docker exec -it nexus-ddos-proxy sh"}, "ZTNA": {"name": "Zero-Trust VPN Gateway", "container": "nexus-ztna-gateway", "hostname": "ztna-gw-01", "ip": "10.0.1.50 (DMZ), 10.0.6.1 (VPN)", "subnets": ["DMZ (10.0.1.0/24)", "VPN (10.0.6.0/24)"], "role": "WireGuard Zero Trust Network Access Gateway", "ports": "Host 51820:51820/udp, Host 8443:8443", "tech": "WireGuard Kernel Module + ZTNA Controller", "security_zone": "DMZ", "vuln": "Gateway for remote workforce VPN clients; requires valid WireGuard key.", "creds": "ZTNA Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-ztna-gateway bash"}, "NAC": {"name": "NAC Server (Cisco ISE)", "container": "nexus-nac-server", "hostname": "nac-ise-01", "ip": "10.0.2.15", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Access Control & 802.1X Policy Server", "ports": "Port 8100 (Management API)", "tech": "Python 3.11 Flask 802.1X Simulation", "security_zone": "Core", "vuln": "Vulnerable to MAC Authentication Bypass (MAB) on `/api/bypass` (Flag 6).", "creds": "Admin: nac_admin / ISE@Nexus2026!", "docker_cmd": "docker exec -it nexus-nac-server bash"}, "NMS": {"name": "NMS (Prometheus + Grafana)", "container": "nexus-nms-grafana & nexus-nms-prometheus", "hostname": "nms-grafana-01 & prometheus-01", "ip": "10.0.2.21 & 10.0.2.20", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Management System & Telemetry Dashboard", "ports": "Host 3000 -> Container 3000", "tech": "Grafana v10 + Prometheus v2.50", "security_zone": "Core", "vuln": "Monitors network traffic, packet loss, and CPU load across switches.", "creds": "nexus_nms_admin / NMS@Nexus2026! (Dashboard: http://localhost:3000)", "docker_cmd": "docker exec -it nexus-nms-grafana sh"}, "Spine1": {"name": "DC Spine Switch 1", "container": "nexus-dc-spine-1", "hostname": "dc-spine-01", "ip": "10.0.3.241 (DC), 10.0.2.41 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 1 (Nexus 9516 sim)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Interconnects all leaf switches with non-blocking 100GbE full-mesh fabric.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-1 bash"}, "Spine2": {"name": "DC Spine Switch 2", "container": "nexus-dc-spine-2", "hostname": "dc-spine-02", "ip": "10.0.3.242 (DC), 10.0.2.42 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 2 (Redundant)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Redundant spine node providing dual-plane fabric resilience.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-2 bash"}, "Leaf1": {"name": "DC Leaf Switch 1", "container": "nexus-dc-leaf-1", "hostname": "dc-leaf-01", "ip": "10.0.3.243", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 1 (Compute Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Production Database (db-prod-01) and ERP Intranet.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-1 bash"}, "Leaf2": {"name": "DC Leaf Switch 2", "container": "nexus-dc-leaf-2", "hostname": "dc-leaf-02", "ip": "10.0.3.244", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 2 (Storage Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Primary SAN Storage and Disaster Recovery Backup SAN.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-2 bash"}, "DRSAN": {"name": "MinIO DR Backup SAN", "container": "nexus-dc-backup-dr", "hostname": "san-dr-01", "ip": "10.0.3.35", "subnets": ["DC (10.0.3.0/24)"], "role": "Disaster Recovery Storage & Replicated Vault", "ports": "Container 9002 (S3 API), 9003 (Console)", "tech": "MinIO Object Storage (DR Node)", "security_zone": "DC", "vuln": "Secondary off-site backup vault replicated from primary SAN.", "creds": "nexus_dr_admin / DRBackup_Nexus@2026!", "docker_cmd": "docker exec -it nexus-dc-backup-dr sh"}, "SDWANBranch": {"name": "Branch SD-WAN Edge", "container": "nexus-branch-sdwan", "hostname": "branch-sdwan-dhaka", "ip": "203.0.113.50 (ISP2), 10.0.5.1 (Branch)", "subnets": ["ISP2 (203.0.113.0/24)", "Branch (10.0.5.0/24)"], "role": "Dhaka Regional Branch SD-WAN Edge Gateway", "ports": "WireGuard IPSec Tunnel", "tech": "WireGuard SD-WAN Overlay", "security_zone": "Branch", "vuln": "Establishes encrypted site-to-site SD-WAN tunnel over ISP2 to HQ.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-branch-sdwan bash"}, "BranchPC": {"name": "Branch Office PC", "container": "nexus-branch-pc-01", "hostname": "branch-pc-01", "ip": "10.0.5.10", "subnets": ["Branch (10.0.5.0/24)"], "role": "Branch Employee Workstation (ibrahim) - Gray-Box", "ports": "SSH / Terminal Access", "tech": "Debian Linux Workstation", "security_zone": "Branch", "vuln": "1. SSH brute-force target (`ibrahim:Branch@2026`)\\n2. World-readable `/etc/wireguard/wg0.conf` key leak to pivot to HQ.", "creds": "ibrahim / Branch@2026", "docker_cmd": "docker exec -it nexus-branch-pc-01 bash"}, "VoIP": {"name": "VoIP PBX Server", "container": "nexus-voip-pbx", "hostname": "voip-pbx-01", "ip": "10.0.4.50", "subnets": ["Campus (10.0.4.0/24)"], "role": "Asterisk Corporate VoIP PBX Telephony Server", "ports": "Host 5060:5060 (SIP UDP/TCP)", "tech": "Asterisk 20 LTS VoIP PBX", "security_zone": "Campus", "vuln": "Weak SIP extension credentials (`1003:1234`), unencrypted audio conference eavesdropping (ext 9000).", "creds": "SIP Accounts: 1001, 1002, 1003 (Pass: 1234)", "docker_cmd": "docker exec -it nexus-voip-pbx bash"}, "IoT": {"name": "MQTT IoT Sensor Device", "container": "nexus-iot-device-01", "hostname": "iot-campus-01", "ip": "10.0.4.70", "subnets": ["Campus (10.0.4.0/24)"], "role": "Smart Campus Environmental Sensor & MQTT Broker", "ports": "Port 1883 (MQTT)", "tech": "Eclipse Mosquitto MQTT Broker", "security_zone": "Campus", "vuln": "Unauthenticated MQTT broker (`allow_anonymous true`) leaks internal infrastructure alerts & DC IPs.", "creds": "Anonymous access allowed (`mosquitto_sub -t '#'`)", "docker_cmd": "docker exec -it nexus-iot-device-01 sh"}, "IPCam": {"name": "CCTV IP Camera Server", "container": "nexus-ipcam-server", "hostname": "ipcam-01", "ip": "10.0.4.60", "subnets": ["Campus (10.0.4.0/24)"], "role": "RTSP Surveillance CCTV Stream Server", "ports": "Host 8554:8554 (RTSP), Host 8888:8888 (HLS Web)", "tech": "MediaMTX RTSP/HLS Video Server", "security_zone": "Campus", "vuln": "Unauthenticated RTSP video surveillance feed accessible on network.", "creds": "RTSP: rtsp://localhost:8554/campus-cam01", "docker_cmd": "docker exec -it nexus-ipcam-server sh"}, "CloudTGW": {"name": "Cloud Transit Gateway", "container": "nexus-cloud-gateway", "hostname": "cloud-tgw-01", "ip": "172.16.0.1 (Cloud), 10.0.3.251 (DC)", "subnets": ["Cloud (172.16.0.0/24)", "DC (10.0.3.0/24)"], "role": "AWS Transit Gateway / Azure VNet Peering Router", "ports": "Inter-VPC Peering & BGP Overlay", "tech": "Debian Linux + Policy Routing Engine", "security_zone": "Cloud", "vuln": "Direct secure peering bridge between on-premises Data Center and Cloud VPC.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-cloud-gateway bash"}, "CloudLB": {"name": "Cloud Load Balancer", "container": "nexus-cloud-lb", "hostname": "cloud-alb-01", "ip": "172.16.0.10", "subnets": ["Cloud (172.16.0.0/24)"], "role": "HAProxy Cloud Application Load Balancer (ALB)", "ports": "Container 80 / 443", "tech": "HAProxy 2.9 Alpine", "security_zone": "Cloud", "vuln": "Distributes external cloud requests to containerized microservice backends.", "creds": "Internal Cloud Routing", "docker_cmd": "docker exec -it nexus-cloud-lb sh"}, "CloudApp": {"name": "Cloud Microservice App", "container": "nexus-cloud-app", "hostname": "cloud-app-01", "ip": "172.16.0.20", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Kubernetes-style Cloud API Microservice", "ports": "Host 8090 -> Container 8080", "tech": "Python 3.11 Flask Microservice + JWT", "security_zone": "Cloud", "vuln": "1. Server-Side Request Forgery (SSRF) on `/api/v1/fetch?url=` (Flag 4)\\n2. Weak JWT HS256 algorithm vulnerability.", "creds": "API Endpoint: http://localhost:8090/api/v1/config", "docker_cmd": "docker exec -it nexus-cloud-app bash"}, "CloudDB": {"name": "Cloud Managed Database (RDS)", "container": "nexus-cloud-db", "hostname": "cloud-rds-01", "ip": "172.16.0.30", "subnets": ["Cloud (172.16.0.0/24)"], "role": "AWS RDS Simulated PostgreSQL Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "Cloud", "vuln": "Cloud-native data store; vulnerable to credential extraction via Cloud SSRF.", "creds": "nexus_rds_admin / RdsNexusProd@2026!Cloud (DB: nexus_cloud_prod)", "docker_cmd": "docker exec -it nexus-cloud-db psql -U nexus_rds_admin -d nexus_cloud_prod"}, "SaaS": {"name": "SaaS SSO Identity Portal", "container": "nexus-saas-sso", "hostname": "sso-portal-01", "ip": "172.16.0.40", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Corporate SaaS Identity Provider (SAML / OAuth2)", "ports": "Host 8443:8443", "tech": "Python 3.11 Flask SAML/OAuth2 IdP Mock", "security_zone": "Cloud", "vuln": "Credential stuffing target & authentication bypass on `/dashboard` (Flag 5).", "creds": "SSO Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-saas-sso bash"}, "VPNClients": {"name": "Remote VPN Clients", "container": "virtual-client-node", "hostname": "vpn-client-pool", "ip": "10.0.6.10 - 10.0.6.50", "subnets": ["VPN (10.0.6.0/24)"], "role": "Remote Workforce Laptops & Mobile Clients", "ports": "WireGuard UDP 51820", "tech": "WireGuard Client Overlay", "security_zone": "VPN", "vuln": "Connects through ZTNA Gateway (10.0.1.50) to access internal resources.", "creds": "WireGuard Client Keypairs", "docker_cmd": "# Simulates remote workforce endpoints"}};
+        window.NODES_DB = {
+            "Internet": {"name": "Public Internet & WAN", "container": "wan-cloud-backbone", "hostname": "internet-wan-cloud", "ip": "198.51.100.0/24 & 203.0.113.0/24", "subnets": ["WAN (198.51.100.0/24)", "ISP2 (203.0.113.0/24)"], "role": "Public Internet, Dual ISP BGP Uplinks & External Traffic Simulator", "ports": "BGP, DNS, Transit", "tech": "BGP Simulation / Docker Bridge", "security_zone": "WAN", "vuln": "Simulates internet routing and external black-box attack origin.", "creds": "Public Internet Gateway", "docker_cmd": "# External network simulator"},
+            "ISP1": {"name": "ISP 1 Primary Uplink", "container": "nexus-wan-isp1", "hostname": "isp1-transit", "ip": "198.51.100.0/24", "subnets": ["WAN (198.51.100.0/24)"], "role": "Primary Corporate Internet Service Provider (BGP AS 65001)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Primary inbound link for corporate traffic and web portal users.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 1 Uplink node"},
+            "ISP2": {"name": "ISP 2 Secondary Uplink", "container": "nexus-wan-isp2", "hostname": "isp2-transit", "ip": "203.0.113.0/24", "subnets": ["ISP2 (203.0.113.0/24)"], "role": "Secondary Redundant Internet Service Provider (BGP AS 65002)", "ports": "BGP Uplink", "tech": "Carrier BGP Router", "security_zone": "WAN", "vuln": "Failover path and branch office SD-WAN connectivity provider.", "creds": "Carrier Infrastructure", "docker_cmd": "# ISP 2 Uplink node"},
+            "EdgeRouter": {"name": "Edge Router A (BGP)", "container": "nexus-edge-router", "hostname": "edge-gw-01", "ip": "198.51.100.1 / 10.0.1.1", "subnets": ["WAN (198.51.100.0/24)", "DMZ (10.0.1.0/24)"], "role": "Primary BGP Edge Gateway & WAN Router (ISP1)", "ports": "BGP / NAT Routing (Internal)", "tech": "Debian Linux + Quagga/FRR BGP Routing", "security_zone": "WAN", "vuln": "Boundary router, routes traffic between WAN and DMZ.", "creds": "Managed via network automation / Docker root", "docker_cmd": "docker exec -it nexus-edge-router bash"},
+            "HQFW": {"name": "HQ Next-Gen Firewall", "container": "nexus-hq-firewall", "hostname": "fw-perimeter-01", "ip": "10.0.1.254, 10.0.2.1, 10.0.3.1, 10.0.4.1", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "DC (10.0.3.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed Stateful Perimeter Firewall", "ports": "iptables Stateful Packet Inspection", "tech": "iptables + IP Forwarding Engine", "security_zone": "DMZ", "vuln": "Enforces strict inter-VLAN zoning rules and segment isolation.", "creds": "NET_ADMIN privileged container", "docker_cmd": "docker exec -it nexus-hq-firewall bash"},
+            "WAF": {"name": "Nginx WAF & Reverse Proxy", "container": "nexus-corp-waf-proxy", "hostname": "srv-waf-proxy", "ip": "10.0.1.10", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Web Application Firewall & Reverse Proxy", "ports": "Host 80 -> Container 80", "tech": "Nginx 1.25 Alpine Reverse Proxy", "security_zone": "DMZ", "vuln": "Proxies requests to Corporate Web Portal; initial target for external recon.", "creds": "Public Web Service (http://localhost:80)", "docker_cmd": "docker exec -it nexus-corp-waf-proxy sh"},
+            "WebPortal": {"name": "Corporate Web Portal", "container": "nexus-corp-web-portal", "hostname": "srv-dmz-web01", "ip": "10.0.1.20", "subnets": ["DMZ (10.0.1.0/24)"], "role": "Customer & Shipment Portal (Flask App)", "ports": "Container 5000 (Proxied by WAF)", "tech": "Python 3.11 Flask + SQLite3", "security_zone": "DMZ", "vuln": "1. SQL Injection on `/?track_id=` (Flag 1)\n2. Command Injection in `/admin/server-check` (Flag 2)", "creds": "admin / NexusTechAdmin2026!", "docker_cmd": "docker exec -it nexus-corp-web-portal bash"},
+            "MailServer": {"name": "Corporate Mail Server", "container": "nexus-corp-mail-server", "hostname": "srv-mail-01", "ip": "10.0.1.30", "subnets": ["DMZ (10.0.1.0/24)"], "role": "MailHog SMTP & Webmail Testing Server", "ports": "Host 8025:8025 (Web UI), Host 1025:1025 (SMTP)", "tech": "MailHog Go SMTP Engine", "security_zone": "DMZ", "vuln": "Unauthenticated Webmail UI on port 8025; captures internal password resets.", "creds": "Web UI: http://localhost:8025 (No auth)", "docker_cmd": "docker exec -it nexus-corp-mail-server sh"},
+            "Bastion": {"name": "SSH Bastion Jump Host", "container": "nexus-corp-bastion", "hostname": "bastion", "ip": "10.0.1.40 (DMZ), 10.0.2.5 (Core), 10.0.4.5 (Campus)", "subnets": ["DMZ (10.0.1.0/24)", "Core (10.0.2.0/24)", "Campus (10.0.4.0/24)"], "role": "Multi-homed SSH Secure Jump Host", "ports": "Host 2222 -> Container 22", "tech": "OpenSSH Server on Alpine", "security_zone": "DMZ", "vuln": "Direct pivot route from external network into Core and Campus subnets.", "creds": "devops-remote / devops-remote@123", "docker_cmd": "ssh devops-remote@localhost -p 2222"},
+            "DMZExposed": {"name": "DMZ Monitoring Server (Vulnerable)", "container": "nexus-dmz-exposed", "hostname": "dmz-mon-01", "ip": "198.51.100.50 (WAN) / 10.0.1.60 (DMZ)", "subnets": ["WAN (198.51.100.0/24)", "DMZ (10.0.1.0/24)"], "role": "Intentionally Vulnerable Network Service Node — Black-Box Entry Point", "ports": "FTP:21, Telnet:23, SNMP:161/udp, PostgreSQL:5432", "tech": "Alpine Linux + vsftpd + busybox-telnetd + net-snmp + PostgreSQL 15", "security_zone": "DMZ", "vuln": "1. FTP Anonymous Login — leaks internal_network_map.txt & infrastructure_report.txt\n2. Telnet Weak Credentials (sysadmin/nexus123) — shell access, /etc/hosts reveals all internal IPs\n3. SNMP v2c Public Community String — exposes interfaces, system info, running processes\n4. PostgreSQL monitoring_db (monitor/monitor123) — network_inventory & service_endpoints tables with all internal hosts & vulnerability hints", "creds": "FTP: anonymous | Telnet: sysadmin/nexus123 | PostgreSQL: monitor/monitor123 (DB: monitoring_db)", "docker_cmd": "docker exec -it nexus-dmz-exposed bash"},
+            "ADDC": {"name": "Active Directory DC", "container": "nexus-ad-dc", "hostname": "dc01", "ip": "10.0.2.10", "subnets": ["Core (10.0.2.0/24)"], "role": "Samba4 AD Domain Controller & SMB Share", "ports": "SMB (445), LDAP (389), Kerberos (88)", "tech": "Samba 4 AD DC", "security_zone": "Core", "vuln": "Unauthenticated SMB share enum reveals `sync_prod_db.sh` containing DB root password.", "creds": "Domain Admin: Administrator / NexusAD2026!Admin", "docker_cmd": "docker exec -it nexus-ad-dc bash"},
+            "SIEM": {"name": "SIEM / SOC Collector", "container": "nexus-corp-siem-soc", "hostname": "siem-soc-01", "ip": "10.0.2.99", "subnets": ["Core (10.0.2.0/24)"], "role": "Central Rsyslog Security Event Collector", "ports": "Syslog UDP/TCP 514", "tech": "Rsyslog Daemon + SOC audit log parser", "security_zone": "Core", "vuln": "Contains pre-seeded event logs for Blue-Team and incident response forensics.", "creds": "Blue-Team entry point (Root)", "docker_cmd": "docker exec -it nexus-corp-siem-soc bash"},
+            "ProdDB": {"name": "Production PostgreSQL DB", "container": "nexus-dc-prod-database", "hostname": "db-prod-01", "ip": "10.0.3.20", "subnets": ["DC (10.0.3.0/24)"], "role": "Crown Jewels Enterprise Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "DC", "vuln": "Contains `system_vault_keys` table with Flag 3 (Crown Jewels CTF).", "creds": "nexus_admin / Nexu$$Prod2026!Sec (DB: nexus_prod)", "docker_cmd": "docker exec -it nexus-dc-prod-database psql -U nexus_admin -d nexus_prod"},
+            "ERP": {"name": "Internal ERP Intranet", "container": "nexus-dc-internal-erp", "hostname": "srv-erp-01", "ip": "10.0.3.10", "subnets": ["DC (10.0.3.0/24)"], "role": "Enterprise Resource Planning & Payroll Portal", "ports": "HTTP 8000 (Internal DC)", "tech": "Python 3.11 Flask + PostgreSQL Client", "security_zone": "DC", "vuln": "Internal financial records; connects directly to Production Database.", "creds": "Internal employee domain credentials", "docker_cmd": "docker exec -it nexus-dc-internal-erp bash"},
+            "SAN": {"name": "MinIO SAN Primary Storage", "container": "nexus-dc-backup-storage", "hostname": "san-backup-01", "ip": "10.0.3.30", "subnets": ["DC (10.0.3.0/24)"], "role": "Primary S3-Compatible Object Storage SAN", "ports": "Container 9000 (S3 API), 9001 (Console)", "tech": "MinIO Distributed Object Storage", "security_zone": "DC", "vuln": "Stores encrypted and raw backups of internal corporate data.", "creds": "nexus_san_root / SuperS3cUr3_B4ckup_Vault_Pass_2026!", "docker_cmd": "docker exec -it nexus-dc-backup-storage sh"},
+            "DevPC": {"name": "DevOps Workstation", "container": "nexus-pc-dev-01", "hostname": "dev-workstation-01", "ip": "10.0.4.20", "subnets": ["Campus (10.0.4.0/24)"], "role": "DevOps Engineer PC (tahmed) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Docker client, Git, Dev tools", "security_zone": "Campus", "vuln": "Pre-configured developer workstation with git repo history & SSH keys.", "creds": "tahmed / DevOpsP@ss2026!", "docker_cmd": "docker exec -it nexus-pc-dev-01 bash"},
+            "HRPC": {"name": "HR Workstation", "container": "nexus-pc-hr-01", "hostname": "hr-workstation-01", "ip": "10.0.4.10", "subnets": ["Campus (10.0.4.0/24)"], "role": "HR Director PC (sjenkins) - Gray-Box Entry", "ports": "SSH / Terminal Access", "tech": "Debian Linux + Office Tools", "security_zone": "Campus", "vuln": "Contains internal HR employee rosters, salary data, and policy docs.", "creds": "sjenkins / HrDirector9921!", "docker_cmd": "docker exec -it nexus-pc-hr-01 bash"},
+            "ISP2Router": {"name": "ISP2 BGP Router", "container": "nexus-isp2-router", "hostname": "isp2-gw-01", "ip": "203.0.113.1 (ISP2), 198.51.100.2 (WAN), 10.0.1.2 (DMZ)", "subnets": ["ISP2 (203.0.113.0/24)", "WAN", "DMZ"], "role": "Secondary Uplink Router (Dual-Homed Redundancy)", "ports": "BGP / OSPF / Routing", "tech": "Debian + Quagga/FRR Routing", "security_zone": "WAN", "vuln": "Secondary WAN path; handles failover and branch SD-WAN connections.", "creds": "Network Admin privileged access", "docker_cmd": "docker exec -it nexus-isp2-router bash"},
+            "DDoS": {"name": "DDoS Scrubbing Center", "container": "nexus-ddos-proxy", "hostname": "ddos-scrub-01", "ip": "203.0.113.10 / 198.51.100.10", "subnets": ["ISP2 (203.0.113.0/24)", "WAN (198.51.100.0/24)"], "role": "Cloud DDoS Mitigation & Traffic Scrubbing", "ports": "Host 8080 -> Container 80", "tech": "Nginx Rate-Limiting & Traffic Inspection Proxy", "security_zone": "WAN", "vuln": "Simulates Cloudflare / Akamai scrubbing; rate-limits brute-force attacks.", "creds": "Public Proxy http://localhost:8080", "docker_cmd": "docker exec -it nexus-ddos-proxy sh"},
+            "ZTNA": {"name": "Zero-Trust VPN Gateway", "container": "nexus-ztna-gateway", "hostname": "ztna-gw-01", "ip": "10.0.1.50 (DMZ), 10.0.6.1 (VPN)", "subnets": ["DMZ (10.0.1.0/24)", "VPN (10.0.6.0/24)"], "role": "WireGuard Zero Trust Network Access Gateway", "ports": "Host 51820:51820/udp, Host 8443:8443", "tech": "WireGuard Kernel Module + ZTNA Controller", "security_zone": "DMZ", "vuln": "Gateway for remote workforce VPN clients; requires valid WireGuard key.", "creds": "ZTNA Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-ztna-gateway bash"},
+            "NAC": {"name": "NAC Server (Cisco ISE)", "container": "nexus-nac-server", "hostname": "nac-ise-01", "ip": "10.0.2.15", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Access Control & 802.1X Policy Server", "ports": "Port 8100 (Management API)", "tech": "Python 3.11 Flask 802.1X Simulation", "security_zone": "Core", "vuln": "Vulnerable to MAC Authentication Bypass (MAB) on `/api/bypass` (Flag 6).", "creds": "Admin: nac_admin / ISE@Nexus2026!", "docker_cmd": "docker exec -it nexus-nac-server bash"},
+            "NMS": {"name": "NMS (Prometheus + Grafana)", "container": "nexus-nms-grafana & nexus-nms-prometheus", "hostname": "nms-grafana-01 & prometheus-01", "ip": "10.0.2.21 & 10.0.2.20", "subnets": ["Core (10.0.2.0/24)"], "role": "Network Management System & Telemetry Dashboard", "ports": "Host 3000 -> Container 3000", "tech": "Grafana v10 + Prometheus v2.50", "security_zone": "Core", "vuln": "Monitors network traffic, packet loss, and CPU load across switches.", "creds": "nexus_nms_admin / NMS@Nexus2026! (Dashboard: http://localhost:3000)", "docker_cmd": "docker exec -it nexus-nms-grafana sh"},
+            "Spine1": {"name": "DC Spine Switch 1", "container": "nexus-dc-spine-1", "hostname": "dc-spine-01", "ip": "10.0.3.241 (DC), 10.0.2.41 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 1 (Nexus 9516 sim)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Interconnects all leaf switches with non-blocking 100GbE full-mesh fabric.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-1 bash"},
+            "Spine2": {"name": "DC Spine Switch 2", "container": "nexus-dc-spine-2", "hostname": "dc-spine-02", "ip": "10.0.3.242 (DC), 10.0.2.42 (Core)", "subnets": ["DC (10.0.3.0/24)", "Core (10.0.2.0/24)"], "role": "Data Center High-Speed Spine Switch 2 (Redundant)", "ports": "BGP-EVPN / VXLAN Fabric", "tech": "FRRouting / Linux Bridge BGP-EVPN", "security_zone": "DC", "vuln": "Redundant spine node providing dual-plane fabric resilience.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-spine-2 bash"},
+            "Leaf1": {"name": "DC Leaf Switch 1", "container": "nexus-dc-leaf-1", "hostname": "dc-leaf-01", "ip": "10.0.3.243", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 1 (Compute Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Production Database (db-prod-01) and ERP Intranet.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-1 bash"},
+            "Leaf2": {"name": "DC Leaf Switch 2", "container": "nexus-dc-leaf-2", "hostname": "dc-leaf-02", "ip": "10.0.3.244", "subnets": ["DC (10.0.3.0/24)"], "role": "Top-of-Rack Leaf Switch 2 (Storage Rack)", "ports": "L2/L3 ToR Switching", "tech": "FRRouting / Linux Bridge", "security_zone": "DC", "vuln": "Connects Primary SAN Storage and Disaster Recovery Backup SAN.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-dc-leaf-2 bash"},
+            "DRSAN": {"name": "MinIO DR Backup SAN", "container": "nexus-dc-backup-dr", "hostname": "san-dr-01", "ip": "10.0.3.35", "subnets": ["DC (10.0.3.0/24)"], "role": "Disaster Recovery Storage & Replicated Vault", "ports": "Container 9002 (S3 API), 9003 (Console)", "tech": "MinIO Object Storage (DR Node)", "security_zone": "DC", "vuln": "Secondary off-site backup vault replicated from primary SAN.", "creds": "nexus_dr_admin / DRBackup_Nexus@2026!", "docker_cmd": "docker exec -it nexus-dc-backup-dr sh"},
+            "SDWANBranch": {"name": "Branch SD-WAN Edge", "container": "nexus-branch-sdwan", "hostname": "branch-sdwan-dhaka", "ip": "203.0.113.50 (ISP2), 10.0.5.1 (Branch)", "subnets": ["ISP2 (203.0.113.0/24)", "Branch (10.0.5.0/24)"], "role": "Dhaka Regional Branch SD-WAN Edge Gateway", "ports": "WireGuard IPSec Tunnel", "tech": "WireGuard SD-WAN Overlay", "security_zone": "Branch", "vuln": "Establishes encrypted site-to-site SD-WAN tunnel over ISP2 to HQ.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-branch-sdwan bash"},
+            "BranchPC": {"name": "Branch Office PC", "container": "nexus-branch-pc-01", "hostname": "branch-pc-01", "ip": "10.0.5.10", "subnets": ["Branch (10.0.5.0/24)"], "role": "Branch Employee Workstation (ibrahim) - Gray-Box", "ports": "SSH / Terminal Access", "tech": "Debian Linux Workstation", "security_zone": "Branch", "vuln": "1. SSH brute-force target (`ibrahim:Branch@2026`)\n2. World-readable `/etc/wireguard/wg0.conf` key leak to pivot to HQ.", "creds": "ibrahim / Branch@2026", "docker_cmd": "docker exec -it nexus-branch-pc-01 bash"},
+            "VoIP": {"name": "VoIP PBX Server", "container": "nexus-voip-pbx", "hostname": "voip-pbx-01", "ip": "10.0.4.50", "subnets": ["Campus (10.0.4.0/24)"], "role": "Asterisk Corporate VoIP PBX Telephony Server", "ports": "Host 5060:5060 (SIP UDP/TCP)", "tech": "Asterisk 20 LTS VoIP PBX", "security_zone": "Campus", "vuln": "Weak SIP extension credentials (`1003:1234`), unencrypted audio conference eavesdropping (ext 9000).", "creds": "SIP Accounts: 1001, 1002, 1003 (Pass: 1234)", "docker_cmd": "docker exec -it nexus-voip-pbx bash"},
+            "IoT": {"name": "MQTT IoT Sensor Device", "container": "nexus-iot-device-01", "hostname": "iot-campus-01", "ip": "10.0.4.70", "subnets": ["Campus (10.0.4.0/24)"], "role": "Smart Campus Environmental Sensor & MQTT Broker", "ports": "Port 1883 (MQTT)", "tech": "Eclipse Mosquitto MQTT Broker", "security_zone": "Campus", "vuln": "Unauthenticated MQTT broker (`allow_anonymous true`) leaks internal infrastructure alerts & DC IPs.", "creds": "Anonymous access allowed (`mosquitto_sub -t '#'`)", "docker_cmd": "docker exec -it nexus-iot-device-01 sh"},
+            "IPCam": {"name": "CCTV IP Camera Server", "container": "nexus-ipcam-server", "hostname": "ipcam-01", "ip": "10.0.4.60", "subnets": ["Campus (10.0.4.0/24)"], "role": "RTSP Surveillance CCTV Stream Server", "ports": "Host 8554:8554 (RTSP), Host 8888:8888 (HLS Web)", "tech": "MediaMTX RTSP/HLS Video Server", "security_zone": "Campus", "vuln": "Unauthenticated RTSP video surveillance feed accessible on network.", "creds": "RTSP: rtsp://localhost:8554/campus-cam01", "docker_cmd": "docker exec -it nexus-ipcam-server sh"},
+            "CloudTGW": {"name": "Cloud Transit Gateway", "container": "nexus-cloud-gateway", "hostname": "cloud-tgw-01", "ip": "172.16.0.1 (Cloud), 10.0.3.251 (DC)", "subnets": ["Cloud (172.16.0.0/24)", "DC (10.0.3.0/24)"], "role": "AWS Transit Gateway / Azure VNet Peering Router", "ports": "Inter-VPC Peering & BGP Overlay", "tech": "Debian Linux + Policy Routing Engine", "security_zone": "Cloud", "vuln": "Direct secure peering bridge between on-premises Data Center and Cloud VPC.", "creds": "NET_ADMIN privileged", "docker_cmd": "docker exec -it nexus-cloud-gateway bash"},
+            "CloudLB": {"name": "Cloud Load Balancer", "container": "nexus-cloud-lb", "hostname": "cloud-alb-01", "ip": "172.16.0.10", "subnets": ["Cloud (172.16.0.0/24)"], "role": "HAProxy Cloud Application Load Balancer (ALB)", "ports": "Container 80 / 443", "tech": "HAProxy 2.9 Alpine", "security_zone": "Cloud", "vuln": "Distributes external cloud requests to containerized microservice backends.", "creds": "Internal Cloud Routing", "docker_cmd": "docker exec -it nexus-cloud-lb sh"},
+            "CloudApp": {"name": "Cloud Microservice App", "container": "nexus-cloud-app", "hostname": "cloud-app-01", "ip": "172.16.0.20", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Kubernetes-style Cloud API Microservice", "ports": "Host 8090 -> Container 8080", "tech": "Python 3.11 Flask Microservice + JWT", "security_zone": "Cloud", "vuln": "1. Server-Side Request Forgery (SSRF) on `/api/v1/fetch?url=` (Flag 4)\n2. Weak JWT HS256 algorithm vulnerability.", "creds": "API Endpoint: http://localhost:8090/api/v1/config", "docker_cmd": "docker exec -it nexus-cloud-app bash"},
+            "CloudDB": {"name": "Cloud Managed Database (RDS)", "container": "nexus-cloud-db", "hostname": "cloud-rds-01", "ip": "172.16.0.30", "subnets": ["Cloud (172.16.0.0/24)"], "role": "AWS RDS Simulated PostgreSQL Database", "ports": "PostgreSQL 5432", "tech": "PostgreSQL 15 Alpine", "security_zone": "Cloud", "vuln": "Cloud-native data store; vulnerable to credential extraction via Cloud SSRF.", "creds": "nexus_rds_admin / RdsNexusProd@2026!Cloud (DB: nexus_cloud_prod)", "docker_cmd": "docker exec -it nexus-cloud-db psql -U nexus_rds_admin -d nexus_cloud_prod"},
+            "SaaS": {"name": "SaaS SSO Identity Portal", "container": "nexus-saas-sso", "hostname": "sso-portal-01", "ip": "172.16.0.40", "subnets": ["Cloud (172.16.0.0/24)"], "role": "Corporate SaaS Identity Provider (SAML / OAuth2)", "ports": "Host 8443:8443", "tech": "Python 3.11 Flask SAML/OAuth2 IdP Mock", "security_zone": "Cloud", "vuln": "Credential stuffing target & authentication bypass on `/dashboard` (Flag 5).", "creds": "SSO Portal: https://localhost:8443", "docker_cmd": "docker exec -it nexus-saas-sso bash"},
+            "VPNClients": {"name": "Remote VPN Clients", "container": "virtual-client-node", "hostname": "vpn-client-pool", "ip": "10.0.6.10 - 10.0.6.50", "subnets": ["VPN (10.0.6.0/24)"], "role": "Remote Workforce Laptops & Mobile Clients", "ports": "WireGuard UDP 51820", "tech": "WireGuard Client Overlay", "security_zone": "VPN", "vuln": "Connects through ZTNA Gateway (10.0.1.50) to access internal resources.", "creds": "WireGuard Client Keypairs", "docker_cmd": "# Simulates remote workforce endpoints"}
+        };
 
         // State variables
         let currentMode = 'core';
@@ -1256,15 +1334,15 @@ flowchart TD
 
             // Update Metrics
             if (mode === 'core') {
-                document.getElementById('metricNodes').innerText = '13';
+                document.getElementById('metricNodes').innerText = '15';
                 document.getElementById('metricSubnets').innerText = '5 / 9';
                 document.getElementById('metricFlags').innerText = '3 Flags';
             } else if (mode === 'enterprise') {
-                document.getElementById('metricNodes').innerText = '28';
+                document.getElementById('metricNodes').innerText = '31';
                 document.getElementById('metricSubnets').innerText = '8 / 9';
                 document.getElementById('metricFlags').innerText = '5 Flags';
             } else if (mode === 'all') {
-                document.getElementById('metricNodes').innerText = '33';
+                document.getElementById('metricNodes').innerText = '36';
                 document.getElementById('metricSubnets').innerText = '9 / 9';
                 document.getElementById('metricFlags').innerText = '6 Flags';
             }
@@ -1416,24 +1494,32 @@ flowchart TD
             document.getElementById('drawerRole').innerText = data.role;
             document.getElementById('drawerTech').innerText = data.tech;
             document.getElementById('drawerPorts').innerText = data.ports;
-            document.getElementById('drawerVuln').innerText = data.vuln.replace(/\\n/g, '\n');
+            document.getElementById('drawerVuln').innerText = data.vuln;
             document.getElementById('drawerCreds').innerText = data.creds;
             document.getElementById('drawerDockerCmd').innerText = data.docker_cmd;
 
             // Avatar icon
             const avatar = document.getElementById('drawerAvatar');
-            if (nodeKey.includes('DB') || nodeKey.includes('SAN')) avatar.innerText = '🗄️';
+            if (nodeKey.includes('DMZExposed')) avatar.innerText = '⚠️';
+            else if (nodeKey.includes('DB') || nodeKey.includes('SAN')) avatar.innerText = '🗄️';
             else if (nodeKey.includes('FW') || nodeKey.includes('WAF') || nodeKey.includes('ZTNA')) avatar.innerText = '🛡️';
-            else if (nodeKey.includes('Cloud')) avatar.innerText = '☁️';
+            else if (nodeKey.includes('Cloud') || nodeKey.includes('SaaS')) avatar.innerText = '☁️';
             else if (nodeKey.includes('Router') || nodeKey.includes('Spine') || nodeKey.includes('Leaf')) avatar.innerText = '🔀';
             else if (nodeKey.includes('PC')) avatar.innerText = '💻';
+            else if (nodeKey.includes('VoIP')) avatar.innerText = '☎️';
+            else if (nodeKey.includes('IoT')) avatar.innerText = '🤖';
+            else if (nodeKey.includes('IPCam')) avatar.innerText = '📹';
+            else if (nodeKey.includes('Bastion')) avatar.innerText = '🔐';
+            else if (nodeKey.includes('Mail')) avatar.innerText = '📧';
             else avatar.innerText = '🌐';
 
             document.getElementById('nodeInspector').classList.add('open');
+            document.getElementById('drawerBackdrop').classList.add('open');
         };
 
         window.closeInspector = function() {
             document.getElementById('nodeInspector').classList.remove('open');
+            document.getElementById('drawerBackdrop').classList.remove('open');
         };
 
         // Copy Helper & Toast
@@ -1460,7 +1546,7 @@ flowchart TD
                     // Match with DB attributes too
                     for (const [k, d] of Object.entries(window.NODES_DB)) {
                         if (id.includes(k) || text.includes(d.name.toLowerCase())) {
-                            if (d.ip.toLowerCase().includes(query) || d.container.toLowerCase().includes(query) || d.role.toLowerCase().includes(query) || d.ports.toLowerCase().includes(query)) {
+                            if (d.ip.toLowerCase().includes(query) || d.container.toLowerCase().includes(query) || d.role.toLowerCase().includes(query) || d.ports.toLowerCase().includes(query) || d.vuln.toLowerCase().includes(query)) {
                                 matched = true;
                             }
                         }

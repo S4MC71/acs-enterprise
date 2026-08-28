@@ -1,7 +1,8 @@
 # 🏢 Nexus Global Enterprise — Penetration Testing & Network Architecture Lab
 
-> **A realistic Docker-based Large Enterprise Network simulation (33 containers across 9 segregated subnets).**  
-> 🗺️ **Interactive Architecture Map:** Open [**`enterprise-network.html`**](./enterprise-network.html) in your browser for real-time Pan/Zoom and Node Inspection.
+> **A realistic Docker-based Large Enterprise Network simulation (34+ containers across 9 segregated subnets).**  
+> 🗺️ **Interactive Architecture Map:** Open [**`enterprise-network.html`**](./enterprise-network.html) in your browser for real-time Pan/Zoom and Node Inspection.  
+> 🎯 **Pentesting Modes:** Black-Box (pure network), Gray-Box (insider), White-Box (blue team). No web app exploitation required for Black-Box.
 
 ---
 
@@ -82,11 +83,11 @@ docker compose --profile core --profile enterprise --profile cloud build
 
 Choose your desired operational mode based on your available RAM. All containers use lightweight Alpine-based images — **actual RAM usage is far lower than traditional VMs:**
 
-| Mode | Actual Container RAM | Recommended Free RAM |
-|:---|:---:|:---:|
-| Mode 1 `core` — 13 containers | ~600 MB – 1 GB | **2 GB** |
-| Mode 2 `enterprise` — 28 containers | ~1.2 GB – 2 GB | **4 GB** |
-| Mode 3 `all` — 33 containers | ~1.5 GB – 2.5 GB | **6 GB** |
+| Mode | Containers | Actual Container RAM | Recommended Free RAM |
+|:---|:---:|:---:|:---:|
+| Mode 1 `core` | **15** | ~600 MB – 1 GB | **2 GB** |
+| Mode 2 `enterprise` | **31** | ~1.2 GB – 2 GB | **4 GB** |
+| Mode 3 `all` | **36** | ~1.5 GB – 2.5 GB | **6 GB** |
 
 > 💡 **Multiple students?** A single lab instance is shared — all students can attack simultaneously with no extra RAM. Only spin up separate instances if each student needs an isolated, independent environment.
 
@@ -171,6 +172,10 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 | **Active Directory DC** | `smbclient -L //10.0.2.10 -N` — `Administrator` / `NexusAD2026!Admin` | ✅ | ✅ | ✅ |
 | **SIEM / SOC Collector** | `docker exec -it nexus-corp-siem-soc bash` — `tail -f /var/log/nexus-syslog/nexus-all.log` | ✅ | ✅ | ✅ |
 | **Internal ERP Intranet** | `http://10.0.3.10:8000` *(Internal DC — pivot required)* | ✅ | ✅ | ✅ |
+| ⭐ **FTP Anonymous Login** | `ftp localhost` — Username: `anonymous` / Password: *(blank)* | ✅ | ✅ | ✅ |
+| ⭐ **Telnet Weak Credentials** | `telnet localhost` — `sysadmin` / `nexus123` | ✅ | ✅ | ✅ |
+| ⭐ **SNMP Public Community** | `snmpwalk -v2c -c public localhost` | ✅ | ✅ | ✅ |
+| ⭐ **PostgreSQL Monitoring DB** | `psql -h localhost -U monitor -d monitoring_db` — Pass: `monitor123` | ✅ | ✅ | ✅ |
 | **Asterisk VoIP PBX** | Softphone (Zoiper/Linphone) on `5060/SIP` — Exts: `1001`-`1003`, Pass: `1234` | ❌ | ✅ | ✅ |
 | **CCTV RTSP Stream** | VLC: `rtsp://localhost:8554/nexus-lobby` | ❌ | ✅ | ✅ |
 | **Campus IoT MQTT** | `mosquitto_sub -h localhost -p 1883 -t '#'` | ❌ | ✅ | ✅ |
@@ -200,16 +205,50 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 | | Mode 1 `core` | Mode 2 `enterprise` | Mode 3 `all` |
 |:---|:---:|:---:|:---:|
-| **Containers** | 13 | 28 | 33 |
+| **Containers** | **15** | **31** | **36** |
 | **Container RAM (actual)** | ~600 MB – 1 GB | ~1.2 GB – 2 GB | ~1.5 GB – 2.5 GB |
 | **Recommended Free RAM** | **2 GB** | **4 GB** | **6 GB** |
 | **Web Apps** | 3 | 7 | 9 |
-| **CLI/Protocol Services** | 5 | 11 | 14 |
+| **CLI/Protocol Services** | 9 | 15 | 18 |
 | **CTF Flags** | 3 | 4 | 6 |
+| **Black-Box Network Entry Points** | FTP, Telnet, SNMP, PostgreSQL | + VoIP, MQTT, Branch SSH | + Cloud SSRF |
 | **Start Command (Windows)** | `.\scripts\start-lab.ps1 -Mode core` | `.\scripts\start-lab.ps1 -Mode enterprise` | `.\scripts\start-lab.ps1 -Mode all` |
 | **Start Command (Linux/macOS)** | `docker compose --profile core up -d` | `docker compose --profile core --profile enterprise up -d` | `docker compose --profile core --profile enterprise --profile cloud up -d` |
 
 > 👥 **Multi-Student Setup:** One lab instance can serve an **unlimited number of students simultaneously** — they all connect to the same shared environment. Separate instances are only needed if students require fully isolated labs (multiply RAM by the number of instances).
+
+---
+
+## 🎯 VPS Deployment (Student Access Over Internet)
+
+To host this lab on a VPS and give students the public IP:
+
+```bash
+# 1. Set your VPS public IP (required for FTP Passive Mode)
+export PUBLIC_IP=$(curl -s ifconfig.me)
+
+# 2. Start the lab
+cd lab/
+docker compose --profile core --profile enterprise up -d
+
+# 3. Give students ONLY the VPS public IP — nothing else!
+echo "Target IP: $PUBLIC_IP"
+```
+
+**Ports students will see externally:**
+
+| Port | Protocol | Service | Vulnerability |
+|:----:|:--------:|:--------|:--------------|
+| `21` | TCP | FTP | Anonymous login → internal network map + audit report |
+| `23` | TCP | Telnet | Weak creds (`sysadmin`/`nexus123`) → full shell |
+| `80` | TCP | Web Portal | SQLi + Command Injection |
+| `161` | UDP | SNMP | Public community string → internal IP leak |
+| `2222` | TCP | SSH Bastion | Pivot point into internal network |
+| `5060` | UDP | VoIP SIP | Brute-force target (enterprise profile) |
+| `5432` | TCP | PostgreSQL | Weak creds → internal host inventory |
+| `8025` | TCP | MailHog | Corporate webmail |
+
+> 📖 **Student Tool Guide:** [`lab/docs/network-pentesting-toolguide.md`](./lab/docs/network-pentesting-toolguide.md) — exact commands for every attack path.
 
 ---
 
@@ -322,6 +361,7 @@ After a total wipe, recreate everything cleanly in one step:
 | **Firewall iptables** | [`lab/config/hq-firewall/`](./lab/config/hq-firewall/) | Inter-VLAN packet filtering, NAT & drop rules |
 | **Asterisk VoIP PBX** | [`lab/config/voip/`](./lab/config/voip/) | SIP users, dialplans & conference room configs |
 | **Prometheus NMS** | [`lab/config/nms/prometheus.yml`](./lab/config/nms/prometheus.yml) | Scrape metrics & target container IPs |
+| ⭐ **DMZ Exposed Services** | [`lab/config/dmz-exposed/`](./lab/config/dmz-exposed/) | FTP files, SNMP community, Telnet users, PostgreSQL monitoring DB |
 | **Master Compose** | [`lab/docker-compose.yml`](./lab/docker-compose.yml) | Subnet definitions, exposed ports & profiles |
 
 > **💡 Hot-Reload Tip:** After editing any file, apply changes instantly without stopping the entire lab:  

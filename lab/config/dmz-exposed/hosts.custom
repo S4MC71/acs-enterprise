@@ -1,0 +1,32 @@
+127.0.0.1       localhost
+::1             localhost
+
+# ── nexus-dmz-exposed (this host) ────────────────────────────────
+198.51.100.50   dmz-mon-01.nexus.internal  nexus-dmz-exposed
+10.0.1.60       dmz-mon-01.nexus.internal
+
+# ── DMZ (10.0.1.0/24) ────────────────────────────────────────────
+10.0.1.1        edge-gw-01.nexus.internal
+10.0.1.10       srv-waf-proxy.nexus.internal  www.nexus.internal
+10.0.1.20       srv-dmz-web01.nexus.internal
+10.0.1.30       srv-mail-01.nexus.internal   mail.nexus.internal
+10.0.1.40       bastion.nexus.internal
+
+# ── Core Backbone (10.0.2.0/24) ──────────────────────────────────
+10.0.2.10       dc01.nexus.internal          nexus.internal
+10.0.2.15       nac-ise-01.nexus.internal
+10.0.2.20       prometheus-01.nexus.internal
+10.0.2.21       nms-grafana-01.nexus.internal
+10.0.2.99       siem-soc-01.nexus.internal
+
+# ── Data Center (10.0.3.0/24) ────────────────────────────────────
+10.0.3.10       srv-erp-01.nexus.internal    erp.nexus.internal
+10.0.3.20       db-prod-01.nexus.internal    db.nexus.internal
+10.0.3.30       san-backup-01.nexus.internal backup.nexus.internal
+
+# ── Campus (10.0.4.0/24) ─────────────────────────────────────────
+10.0.4.10       hr-workstation-01.nexus.internal
+10.0.4.20       dev-workstation-01.nexus.internal
+10.0.4.50       voip-pbx-01.nexus.internal
+10.0.4.60       ipcam-01.nexus.internal
+10.0.4.70       iot-campus-01.nexus.internal

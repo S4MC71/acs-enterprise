@@ -1,0 +1,80 @@
+============================================================
+  NEXUS GLOBAL ENTERPRISE
+  Q3 2026 Infrastructure Security Assessment
+  Document ID: SEC-AUDIT-Q3-2026
+  Prepared by: IT Security Team
+  Date: 2026-08-15  |  Classification: CONFIDENTIAL
+============================================================
+
+EXECUTIVE SUMMARY
+─────────────────
+Assessment period: July 1 – August 15, 2026
+Total findings: 11 (3 Critical, 4 High, 4 Medium)
+
+Remediation deadline: 2026-09-30
+Escalation contact: ciso@nexus.internal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CRITICAL FINDINGS (Immediate Action Required)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CRIT-01] Anonymous SMB Access on Active Directory (dc01 / 10.0.2.10)
+  Status   : OPEN — Not remediated
+  Finding  : SMB share "IT-Backups" allows anonymous (unauthenticated) read
+             access. Contains infrastructure scripts with hardcoded DB creds.
+  Impact   : Full database compromise possible via credential extraction.
+  Ref File : \\dc01.nexus.internal\IT-Backups\sync_prod_db.sh
+  Action   : Disable anonymous SMB. Rotate all credentials immediately.
+
+[CRIT-02] Unauthenticated MQTT Broker (iot-campus-01 / 10.0.4.70)
+  Status   : OPEN — Awaiting IoT team approval
+  Finding  : MQTT broker allows anonymous subscribe/publish on all topics.
+             Topic nexus/internal/infra/alerts leaks DC IPs and port numbers.
+  Impact   : Internal infrastructure enumeration, potential DoS.
+  Action   : Enable authentication. Restrict topic ACLs.
+
+[CRIT-03] NAC MAC Bypass Vulnerability (nac-ise-01 / 10.0.2.15)
+  Status   : OPEN — Vendor patch pending
+  Finding  : POST /api/bypass endpoint accepts arbitrary MAC addresses.
+             Allows any device to bypass 802.1X network admission.
+  Ref: REF#NAC-2026-03
+  Action   : Disable bypass endpoint. Apply vendor patch.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HIGH FINDINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[HIGH-01] LDAP Anonymous Bind Enabled (dc01 / 10.0.2.10)
+  Finding  : LDAP (port 389) accepts anonymous bind, allowing full directory
+             enumeration without credentials.
+  Action   : Disable anonymous bind in Samba AD configuration.
+
+[HIGH-02] VoIP SIP Weak PIN Policy (voip-pbx-01 / 10.0.4.50)
+  Finding  : Extensions 1001-1005 use 4-digit numeric PINs. Susceptible to
+             brute-force. Extension 1003 found with PIN: 1234.
+  Action   : Enforce minimum 8-char alphanumeric SIP passwords.
+
+[HIGH-03] WireGuard PSK World-Readable (branch-pc-01 / 10.0.5.10)
+  Finding  : /etc/wireguard/wg0.conf is readable by all users (chmod 644).
+             Exposes PSK allowing ZTNA bypass.
+  Action   : Set permissions to 600. Rotate PSK.
+
+[HIGH-04] IP Camera RTSP No Authentication (ipcam-01 / 10.0.4.60)
+  Finding  : RTSP stream (port 8554) accessible without credentials.
+  Action   : Enable RTSP authentication in MediaMTX config.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  OPEN ITEMS — INFRASTRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  This FTP server (dmz-mon-01 / 10.0.1.60):
+  - Anonymous FTP access to /pub directory (medium risk)
+  - SNMP v1/v2c with default "public" community (medium risk)
+  - Telnet service active — unencrypted protocol (high risk)
+  - PostgreSQL monitoring DB accessible externally (medium risk)
+  Scheduled remediation: 2026-09-15
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Document End — SEC-AUDIT-Q3-2026
+  For internal distribution only. Do not share externally.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

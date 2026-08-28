@@ -1,0 +1,98 @@
+============================================================
+  NEXUS GLOBAL ENTERPRISE
+  Network Topology & IP Address Allocation
+  Document ID: NOC-NET-2026-001
+  Version: 3.2  |  Last Updated: 2026-08-20
+  Owner: Network Operations Center (NOC)
+============================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NETWORK ZONES OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Zone              Subnet              Gateway        VLAN
+  ──────────────────────────────────────────────────────────
+  WAN / ISP1        198.51.100.0/24     198.51.100.254  -
+  WAN / ISP2        203.0.113.0/24      203.0.113.254   -
+  Cloud (AWS VPC)   172.16.0.0/24       172.16.0.254    -
+  DMZ               10.0.1.0/24         10.0.1.253      VLAN10
+  Core Backbone     10.0.2.0/24         10.0.2.254      VLAN20
+  Data Center       10.0.3.0/24         10.0.3.254      VLAN30
+  Campus LAN        10.0.4.0/24         10.0.4.254      VLAN40
+  Branch Office     10.0.5.0/24         10.0.5.254      VLAN50
+  VPN/ZTNA Tunnel   10.0.6.0/24         10.0.6.254      VLAN60
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DMZ — PUBLIC FACING (10.0.1.0/24)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IP              Hostname                    Role
+  ────────────────────────────────────────────────────────────
+  10.0.1.1        edge-gw-01.nexus.internal   BGP Edge Router (ISP1)
+  10.0.1.2        isp2-gw-01.nexus.internal   BGP Edge Router (ISP2)
+  10.0.1.10       srv-waf-proxy.nexus.internal  Nginx WAF Reverse Proxy
+  10.0.1.20       srv-dmz-web01.nexus.internal  Corporate Web Portal
+  10.0.1.30       srv-mail-01.nexus.internal    Mail Server (MailHog)
+  10.0.1.40       bastion.nexus.internal        SSH Jump Host *** MULTI-HOMED ***
+  10.0.1.50       ztna-gw-01.nexus.internal     ZTNA WireGuard Gateway
+  10.0.1.60       dmz-mon-01.nexus.internal     DMZ Monitoring (this host)
+
+  NOTE: bastion.nexus.internal (10.0.1.40) is reachable on port 22
+        externally via host port 2222. Used by remote DevOps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CORE BACKBONE — INTERNAL (10.0.2.0/24)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IP              Hostname                    Role
+  ────────────────────────────────────────────────────────────
+  10.0.2.1        fw-perimeter-01.nexus.internal  HQ Firewall (multi-homed)
+  10.0.2.10       dc01.nexus.internal             Active Directory DC (Samba4)
+  10.0.2.15       nac-ise-01.nexus.internal       NAC / 802.1X Server
+  10.0.2.20       prometheus-01.nexus.internal    Prometheus NMS
+  10.0.2.21       nms-grafana-01.nexus.internal   Grafana Dashboard
+  10.0.2.99       siem-soc-01.nexus.internal      SIEM / SOC Syslog
+
+  IMPORTANT: DC01 hosts Active Directory domain "nexus.internal"
+             SMB shares accessible from campus workstations.
+             IT-Backups share contains infrastructure scripts.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DATA CENTER — RESTRICTED (10.0.3.0/24)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IP              Hostname                    Role
+  ────────────────────────────────────────────────────────────
+  10.0.3.10       srv-erp-01.nexus.internal       Internal ERP (port 8000)
+  10.0.3.20       db-prod-01.nexus.internal       PostgreSQL Production DB (5432)
+  10.0.3.30       san-backup-01.nexus.internal    MinIO SAN (9000/9001)
+  10.0.3.35       san-dr-01.nexus.internal        DR MinIO (9003)
+
+  DB ADMIN CONTACT: it-infra@nexus.internal
+  DB CREDS: Stored in IT-Backups SMB share on dc01.nexus.internal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CAMPUS LAN (10.0.4.0/24)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IP              Hostname                         Role / User
+  ────────────────────────────────────────────────────────────
+  10.0.4.10       hr-workstation-01.nexus.internal  HR PC (sjenkins)
+  10.0.4.20       dev-workstation-01.nexus.internal DevOps PC (tahmed)
+  10.0.4.50       voip-pbx-01.nexus.internal        Asterisk PBX (SIP:5060)
+  10.0.4.60       ipcam-01.nexus.internal           IP Camera RTSP (8554)
+  10.0.4.70       iot-campus-01.nexus.internal      IoT MQTT Broker (1883)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BRANCH OFFICE — DHAKA (10.0.5.0/24)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  IP              Hostname                    Role
+  ────────────────────────────────────────────────────────────
+  10.0.5.1        branch-sdwan-dhaka          SD-WAN Edge (WireGuard)
+  10.0.5.10       branch-pc-01                Branch Employee PC (ibrahim)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Document End — NOC-NET-2026-001 v3.2
+  INTERNAL DISTRIBUTION ONLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

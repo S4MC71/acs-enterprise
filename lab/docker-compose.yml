@@ -181,6 +181,31 @@ services:
     profiles: [core, enterprise]
     restart: unless-stopped
 
+  # ─────────────────────────────────────────────────────────────────
+  # DMZ Exposed — Intentionally Vulnerable Network Services
+  # Entry points: FTP (anon) · Telnet (weak) · SNMP (public) · PostgreSQL
+  # Black-Box pentesting entry point (no web app needed)
+  # VPS deployment: set PUBLIC_IP env var for FTP PASV to work correctly
+  # ─────────────────────────────────────────────────────────────────
+  dmz-exposed:
+    build: { context: ./config/dmz-exposed, dockerfile: Dockerfile }
+    container_name: nexus-dmz-exposed
+    hostname: dmz-mon-01
+    cap_add: [NET_ADMIN]
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP:-0.0.0.0}   # Set to VPS public IP for FTP PASV
+    ports:
+      - "21:21"           # FTP control
+      - "21100-21110:21100-21110"  # FTP PASV data ports
+      - "23:23"           # Telnet
+      - "161:161/udp"     # SNMP
+      - "5432:5432"       # PostgreSQL (monitoring_db — weak creds)
+    networks:
+      wan_net: { ipv4_address: 198.51.100.50 }
+      dmz_net: { ipv4_address: 10.0.1.60 }
+    profiles: [core, enterprise]
+    restart: unless-stopped
+
   # Active Directory Domain Controller (Samba)
   nexus-ad-dc:
     build: { context: ./config/samba-ad, dockerfile: Dockerfile }

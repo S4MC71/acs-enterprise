@@ -32,6 +32,13 @@ iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.10 -p udp -m multiport --dports 53,
 # DMZ can send Syslog to SIEM (10.0.2.99)
 iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.99 -p udp --dport 514 -j ACCEPT
 
+# 3b. DMZ Exposed Monitor (10.0.1.60) Pivot Rules:
+# Allows a student who gets shell on dmz-exposed to reach Bastion (10.0.1.40)
+# and then pivot inward — intentional for Black-Box attack chain demonstration
+iptables -A FORWARD -s 10.0.1.60 -d 10.0.1.40 -p tcp --dport 22 -j ACCEPT
+# DMZ Exposed can reach AD DC for enumeration (same as other DMZ hosts)
+iptables -A FORWARD -s 10.0.1.60 -d 10.0.2.10 -p tcp -m multiport --dports 445,389,88 -j ACCEPT
+
 # 4. DMZ to Data Center (DC):
 # DIRECT access from DMZ to DC DB (5432) or SAN (9000) is STRICTLY BLOCKED!
 # Only if DMZ web app is configured to query internal DC ERP (8000)
