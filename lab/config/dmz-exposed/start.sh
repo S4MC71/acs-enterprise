@@ -3,7 +3,7 @@
 #  nexus-dmz-exposed  |  Multi-Service Entrypoint
 #  Starts: FTP · Telnet · SNMP · PostgreSQL
 # ─────────────────────────────────────────────────────────────────
-set -e
+# set -e intentionally removed — individual service failures should not crash container
 
 echo "=============================================="
 echo " NEXUS GLOBAL ENTERPRISE - DMZ Monitor Node  "
@@ -26,10 +26,12 @@ vsftpd /etc/vsftpd/vsftpd.conf &
 FTP_PID=$!
 echo "[+] FTP started (PID: $FTP_PID)"
 
-# ── 4. Start Telnet (busybox telnetd) ────────────────────────────
+# ── 4. Start Telnet ──────────────────────────────────────────────
+# Uses tcpsvd (from busybox-extras) to wrap /bin/login on port 23
 echo "[*] Starting Telnet service (port 23)..."
-busybox telnetd -l /bin/login -p 23
-echo "[+] Telnet started"
+tcpsvd -vE 0.0.0.0 23 /bin/login &
+TELNET_PID=$!
+echo "[+] Telnet started (PID: $TELNET_PID)"
 
 # ── 5. Start SNMP (net-snmpd with public community) ──────────────
 echo "[*] Starting SNMP service (port 161/udp)..."
