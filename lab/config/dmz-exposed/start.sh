@@ -35,7 +35,9 @@ echo "[+] Telnet started (PID: $TELNET_PID)"
 
 # ── 5. Start SNMP (net-snmpd with public community) ──────────────
 echo "[*] Starting SNMP service (port 161/udp)..."
-snmpd -Lo -f -c /etc/snmp/snmpd.conf &
+# -C = ignore all default config files, only use -c specified file
+# -I -hrh = skip host resources handler (avoids /proc/net/snmp kernel mismatch)
+snmpd -C -Lo -f -c /etc/snmp/snmpd.conf -I -hrh &
 SNMP_PID=$!
 echo "[+] SNMP started (PID: $SNMP_PID)"
 
