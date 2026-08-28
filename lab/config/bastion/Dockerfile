@@ -10,7 +10,12 @@ RUN apk add --no-cache \
     shadow \
     sudo \
     vim \
-    less
+    less \
+    samba-client \
+    nmap \
+    postgresql15-client \
+    net-snmp-tools \
+    netcat-openbsd
 
 # Setup SSH Server
 RUN ssh-keygen -A && \
