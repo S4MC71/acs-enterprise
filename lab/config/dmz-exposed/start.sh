@@ -26,12 +26,12 @@ vsftpd /etc/vsftpd/vsftpd.conf &
 FTP_PID=$!
 echo "[+] FTP started (PID: $FTP_PID)"
 
-# ── 4. Start Telnet ──────────────────────────────────────────────
-# Uses tcpsvd (from busybox-extras) to wrap /bin/login on port 23
+# ── 4. Start Telnet via socat (proper PTY/TTY support) ──────────────────
 echo "[*] Starting Telnet service (port 23)..."
-tcpsvd -vE 0.0.0.0 23 /bin/login &
+# socat creates a proper pseudo-terminal (PTY) so /bin/login works correctly
+socat TCP-LISTEN:23,fork,reuseaddr EXEC:'/bin/login',pty,setsid,setpgid,stderr,rawer &
 TELNET_PID=$!
-echo "[+] Telnet started (PID: $TELNET_PID)"
+echo "[+] Telnet started via socat (PID: $TELNET_PID)"
 
 # ── 5. Start SNMP (net-snmpd with public community) ──────────────
 echo "[*] Starting SNMP service (port 161/udp)..."
@@ -57,6 +57,7 @@ cat >> /var/lib/postgresql/data/pg_hba.conf << 'HBA_EOF'
 host    monitoring_db   monitor         0.0.0.0/0               md5
 host    all             postgres        127.0.0.1/32            trust
 HBA_EOF
+
 
 echo "[*] Starting PostgreSQL (port 5432)..."
 su-exec postgres pg_ctl start -D /var/lib/postgresql/data -w -l /tmp/pg.log > /dev/null 2>&1

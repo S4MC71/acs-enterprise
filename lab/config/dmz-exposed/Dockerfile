@@ -19,6 +19,7 @@ RUN apk add --no-cache \
     procps \
     iproute2 \
     net-tools \
+    socat \
     curl \
     wget
 
