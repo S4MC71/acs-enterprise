@@ -177,6 +177,7 @@ services:
     networks:
       dmz_net:    { ipv4_address: 10.0.1.40 }
       core_net:   { ipv4_address: 10.0.2.5  }
+      dc_net:     { ipv4_address: 10.0.3.5  }   # Data Center access for pivot
       campus_net: { ipv4_address: 10.0.4.5  }
     profiles: [core, enterprise]
     restart: unless-stopped
