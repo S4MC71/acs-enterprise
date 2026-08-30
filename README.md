@@ -73,9 +73,13 @@ git clone https://github.com/S4MC71/acs-enterprise.git
 # 2. Navigate to the lab folder:
 cd acs-enterprise/lab
 
-# 3. (Optional) Pre-build or pull all container images:
+# 3. Make scripts executable (Required for Linux/macOS):
+chmod +x scripts/*.sh
+
+# 4. (Optional) Pre-build or pull all container images:
 docker compose --profile core --profile enterprise --profile cloud build
 ```
+
 
 ---
 
@@ -221,7 +225,14 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 ## 🎯 VPS Deployment (Student Access Over Internet)
 
-To host this lab on a VPS and give students the public IP:
+### One-Click Deployment (Recommended for Fresh Ubuntu/Debian VPS)
+Run this single command on a fresh instance to install Docker, clone the repo, and start the interactive lab menu:
+```bash
+curl -O https://raw.githubusercontent.com/S4MC71/acs-enterprise/main/quick-deploy.sh && chmod +x quick-deploy.sh && ./quick-deploy.sh
+```
+
+### Manual Deployment
+If you already have Docker installed and the repository cloned:
 
 ```bash
 # 1. Set your VPS public IP (required for FTP Passive Mode)
