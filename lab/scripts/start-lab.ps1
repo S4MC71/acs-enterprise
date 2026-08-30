@@ -97,11 +97,11 @@ switch ($choice.ToUpper()) {
 Write-Host ""
 Write-Host "[*] Mode: $label" -ForegroundColor Cyan
 Write-Host "[*] Working directory: $labDir"
-Write-Host "[*] Running: docker compose $profiles up -d --build"
+Write-Host "[*] Running: docker compose $profiles up -d --build --remove-orphans"
 Write-Host ""
 
 Push-Location $labDir
-$cmd = "docker compose $profiles up -d --build 2>&1"
+$cmd = "docker compose $profiles up -d --build --remove-orphans 2>&1"
 Invoke-Expression $cmd
 $exitCode = $LASTEXITCODE
 Pop-Location

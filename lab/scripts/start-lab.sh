@@ -34,7 +34,7 @@ echo "[*] Running: docker compose $PROFILES up -d --build"
 echo ""
 
 cd "$LAB_DIR" || exit 1
-docker compose $PROFILES up -d --build
+docker compose $PROFILES up -d --build --remove-orphans
 
 if [ $? -eq 0 ]; then
     echo ""
