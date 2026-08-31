@@ -12,8 +12,8 @@ RUN ARCH=$(uname -m) && \
     rm /tmp/mediamtx.tar.gz && \
     chmod +x /usr/local/bin/mediamtx
 
-# Install ffmpeg for test stream generation (available in Alpine)
-RUN apk add --no-cache ffmpeg
+# Install ffmpeg + fonts for test stream generation (drawtext filter needs fonts)
+RUN apk add --no-cache ffmpeg ttf-dejavu fontconfig && fc-cache -f
 
 COPY mediamtx.yml /etc/mediamtx.yml
 COPY start-camera.sh /usr/local/bin/start-camera.sh
