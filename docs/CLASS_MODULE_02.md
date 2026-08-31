@@ -581,7 +581,36 @@ http://<VPS_IP>:8025
 
 ---
 
-### 🗄️ Attack #6 — MinIO Object Storage (Port 9001) — Service Identification
+### 📡 Attack #6 — SNMP (Port 161 UDP) — Information Disclosure
+
+**Technology Explain করো:**
+> *"SNMP (Simple Network Management Protocol) হলো network device/server monitor করার জন্য। UDP port 161 এ চলে। এর authentication system হলো 'community string'।"*
+
+**Terminal এ try করো:**
+```bash
+snmpwalk -v2c -c public <VPS_IP>
+```
+
+**Expected Output (partial):**
+```
+SNMPv2-MIB::sysDescr.0 = STRING: Linux nexus-gateway 5.15.0-101-generic
+SNMPv2-MIB::sysName.0 = STRING: nexus-gateway
+HOST-RESOURCES-MIB::hrSystemUptime.0 = Timeticks: (14523) 0:02:25.23
+IF-MIB::ifDescr.1 = STRING: lo
+IF-MIB::ifDescr.2 = STRING: eth0
+IF-MIB::ifDescr.3 = STRING: br-campus
+```
+
+**বলো:**
+> *"Community string 'public' guess করে আমরা server এর OS version, hostname, uptime, network interfaces — সব পেয়ে যাচ্ছি। এটা একটা বড় information leak।"*
+
+**MITRE ATT&CK:**
+> `T1082 — System Information Discovery`
+> `T1046 — Network Service Discovery`
+
+---
+
+### 🗄️ Attack #7 — MinIO Object Storage (Port 9001) — Service Identification
 
 **Technology Explain করো:**
 > *"MinIO হলো S3-compatible object storage — AWS S3 এর মতো কিন্তু self-hosted। Backup, file storage এর জন্য use হয়।"*
@@ -1221,7 +1250,7 @@ Client কেন gray-box prefer করে?
 | Gray-box Flags | 2 — FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026} + FLAG{CR0WN_J3W3LS...} |
 | Attack Techniques | 12+ |
 | MITRE ATT&CK TTPs | 14 |
-| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, MinIO, RTSP/HLS (CCTV) |
+| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, MinIO, RTSP/HLS (CCTV), SNMP |
 | Key Teaching Point | Gray-box coverage vs Black-box limitation |
 
 ---
