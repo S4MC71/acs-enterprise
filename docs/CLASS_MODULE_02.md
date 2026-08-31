@@ -1,4 +1,4 @@
-﻿# 🏢 Enterprise Network Penetration Testing — Class Module 02
+# 🏢 Enterprise Network Penetration Testing — Class Module 02
 ### *"From Zero Knowledge to Full Compromise — Black-box to Gray-box"*
 
 > **Instructor:** [তোমার নাম]
@@ -903,7 +903,7 @@ Real-world impact যদি এটা actual pentest হতো:
 > `T1213 — Data from Information Repositories`
 
 ---
-### [GEM] Gray-box Exclusive #4 -- Web Portal: SQLi + RCE (Command Injection)
+### 💎 Gray-box Exclusive #4 — Web Portal: SQLi + RCE (Command Injection)
 
 **bolo:**
 > *"Black-box e portal e login korte parini -- credentials jachhilo na. Gray-box e admin creds peyechi. Ekhon authenticated state e SQLi ebong Command Injection korbo."*
@@ -1001,7 +1001,7 @@ uid=0(root) gid=0(root) groups=0(root),0(root),1(bin),2(daemon),3(sys),4(adm),6(
 ---
 
 
-### [GEM] Gray-box Exclusive #5 -- Grafana: Monitoring System Takeover
+### 💎 Gray-box Exclusive #5 — Grafana: Monitoring System Takeover
 
 **bolo:**
 > *"Grafana holo monitoring dashboard -- kon server kotTuku CPU/RAM use korche, network traffic kemon -- sob ekhane dekha jay. INFRA_RUNBOOK.txt te dekhechilamm 10.0.2.21 te ache. Ar nmap e port 3000 open chilo -- eta publicly accessible!"*
@@ -1032,13 +1032,13 @@ http://<VPS_IP>:3000
 
 **Real Findings:**
 ```
-[check] Port 3000: publicly accessible (nmap e dekha giyechilo)
-[check] Anonymous access enabled -> org info leak (black-box finding!)
-[check] Version 13.2.0 -> check known CVEs
-[check] nexus_nms_admin / NMS@Nexus2026! -> Admin role
-[check] Administration panel: Users, Connections, Plugins
-[x] Data sources: empty (configured nei)
-[x] Dashboards: none
+✅ Port 3000: publicly accessible (nmap e dekha giyechilo)
+✅ Anonymous access enabled -> org info leak (black-box finding!)
+✅ Version 13.2.0 -> check known CVEs
+✅ nexus_nms_admin / NMS@Nexus2026! -> Admin role
+✅ Administration panel: Users, Connections, Plugins
+❌ Data sources: empty (configured nei)
+❌ Dashboards: none
 ```
 
 **bolo:**
@@ -1052,7 +1052,7 @@ http://<VPS_IP>:3000
 
 
 
-### [GEM] Gray-box Exclusive #6 -- MinIO Backup Storage
+### 💎 Gray-box Exclusive #6 — MinIO Backup Storage
 
 **bolo:**
 > *"MinIO holo S3-compatible object storage -- AWS S3 er moto kintu self-hosted. Nexus ekhane DB backup rakhe. sync_prod_db.sh script e credentials peyechilam."*
@@ -1066,9 +1066,9 @@ Password: SuperS3cUr3_B4ckup_Vault_Pass_2026!
 
 **Real Findings:**
 ```
-[check] Full Admin access confirmed
-[check] Administrator panel: Buckets, Policies, Identity, Monitoring
-[x] Buckets: empty (nightly backup script ekhono run hoyni)
+✅ Full Admin access confirmed
+✅ Administrator panel: Buckets, Policies, Identity, Monitoring
+❌ Buckets: empty (nightly backup script ekhono run hoyni)
 ```
 
 **bolo:**
@@ -1118,35 +1118,39 @@ FLAG 4 (Bonus)   → MinIO login করে backup bucket এর
 ### 🔗 Full Kill Chain Timeline
 
 ```
-📅 Black-box Phase:
-  └─ nmap -p- → 17+ open ports discovered
-  └─ FTP anonymous → internal files access
-  └─ Web portal SQLi → employee table dumped (FLAG 1)
-  └─ Command Injection → RCE (FLAG 2)
-  └─ SSH bastion → DMZ foothold
+Black-box Phase (45.76.61.14):
+  +-- nmap -p- -> 17+ open ports (21,23,80,3000,5432,8025,8888,9001...)
+  +-- FTP anonymous -> INFRA_RUNBOOK.txt -> internal IPs + service map
+  +-- Port 80 -> robots.txt -> /api/network/ping path disclosed
+  +-- Port 80 -> /api/v1/status -> internal IPs (no auth!)
+  +-- Port 3000 Grafana -> v13.2.0 + anonymous access enabled
+  +-- SSH :2222 bastion -> devops-remote / NexusCorp#Bastion2026! -> DMZ access
 
-  ⏹️ Black-box এ আটকে গেলাম:
-     → Internal networks (10.0.2.x / 10.0.3.x) invisible
-     → Production DB unreachable from outside
-     → AD credentials নেই → enumerate করা যাচ্ছে না
+  [!] Black-box: blocked at --
+      -> Portal login: no creds -> SQLi/CMDi not possible
+      -> Internal 10.0.2.x / 10.0.3.x -> firewall blocked
+      -> Production DB -> unreachable from outside
 
-  ↓ ── Gray-box Switch (Client info দিলো) ──
+  ↓ ↓ Gray-box Switch (Client provided credentials) ↓ ↓
 
-📅 Gray-box Phase:
-  └─ Internal sweep → 10.0.2.x, 10.0.3.x hosts discovered
-  └─ Workstation bash history → DB credentials leaked
-  └─ SMB IT-Backups → sync_prod_db.sh → DB password
-  └─ Production PostgreSQL → system_vault_keys (FLAG 3)
-  └─ Grafana (10.0.2.21) → default creds → full network map
-  └─ SNMP → network device info dump
-  └─ MinIO backup bucket → production data downloadable
+Gray-box Phase:
+  +-- Bastion ping sweep -> 10.0.2.x / 10.0.3.x / 10.0.4.x hosts found
+  +-- Workstation bash_history -> nexus_admin:Nexu$Prod2026!Sec leaked
+  +-- SMB IT-Backups -> sync_prod_db.sh -> DB + MinIO credentials
+  +-- PostgreSQL 10.0.3.20 -> system_vault_keys ->
+      🚩 FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
+  +-- Portal: admin / NexusTechAdmin2026! -> UNION SQLi ->
+      🚩 FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026}
+  +-- Portal CMDi: 8.8.8.8; id -> uid=0(root) -> Full RCE!
+  +-- Grafana 10.0.2.21:3000 -> nexus_nms_admin -> admin access
+  +-- MinIO 10.0.3.30:9001 -> nexus_san_root -> backup storage admin
+  +-- CCTV 10.0.4.60:8888 -> 3 streams unauthenticated (lobby, serverroom, parking)
 
-  ✅ Gray-box এ যা পেলাম যা black-box এ পাওয়া যেত না:
-     → Internal network topology (10.0.2.x / 10.0.3.x)
-     → Production database credentials + data
-     → Monitoring system → full infra map
-     → Backup storage access
-     → Developer workstation credentials
+  ✅ Gray-box exclusive findings:
+      -> Internal DB credentials + full data dump (employees, payroll, vault keys)
+      -> Web portal authenticated exploits (SQLi + CMDi)
+      -> Monitoring system full infra topology
+      -> Cloud/bank API keys from vault (SWIFT, AWS, Azure)
 ```
 
 ---
@@ -1213,11 +1217,11 @@ Client কেন gray-box prefer করে?
 | Metric | Value |
 |:---|:---:|
 | Total Duration | 4–5 Hours |
-| Black-box Flags | 2 (SQLi, CMDi) |
-| Gray-box Flags | 2+ (DB, MinIO) |
-| Attack Techniques | 10+ |
-| MITRE ATT&CK TTPs | 12 |
-| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, SNMP, MinIO |
+| Black-box Flags | 0 (SQLi/CMDi needed auth — done in gray-box) |
+| Gray-box Flags | 2 — FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026} + FLAG{CR0WN_J3W3LS...} |
+| Attack Techniques | 12+ |
+| MITRE ATT&CK TTPs | 14 |
+| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, MinIO, RTSP/HLS (CCTV) |
 | Key Teaching Point | Gray-box coverage vs Black-box limitation |
 
 ---
