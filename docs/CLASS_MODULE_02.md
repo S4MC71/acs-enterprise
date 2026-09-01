@@ -15,7 +15,7 @@
 |:---|:---|:---:|:---:|
 | **Phase 1** | Enterprise Network Architecture | 📖 Lecture | 20 min |
 | **Phase 2** | Pentest Methodology: Black-box vs Gray-box | 📖 Lecture | 15 min |
-| **Phase 3** | Reconnaissance — nmap Full Scan | 💻 Live Demo | 15–20 min |
+| **Phase 3** | Reconnaissance — TCP Full Scan + UDP Top 1000 + HTML Report | 💻 Live Demo | 25–30 min |
 | **Phase 4** | Service Analysis + Black-box Attack | 💻 Live Demo | 40–50 min |
 | ☕ | **Break** | — | 15 min |
 | **Phase 5** | Gray-box Switch — Full Pentest Chain | 💻 Live Demo | 60–75 min |
@@ -167,25 +167,37 @@ OUT OF SCOPE: কোনো DoS attack নেই, production data delete নে�
 
 ---
 
-# 🔵 PHASE 3 — Reconnaissance: Full Port Scan (15–20 min)
+# 🔵 PHASE 3 — Reconnaissance: TCP Full Scan + UDP Top 1000 + HTML Report (25–30 min)
 ## *"প্রথমে জানো — কে কোথায় আছে"*
 
 ---
 
-### 📡 Scan চালাও
+### 📡 Step 1 — TCP Full Port Scan (সব ৬৫৫৩৫টা port)
+
+**বলো:**
+> *"Recon এর প্রথম কাজ — target এ কোন কোন port খোলা আছে সেটা জানা। আমরা দুটো scan চালাবো — প্রথমে TCP এর সব port, তারপর UDP এর top ১০০০ port। দুটো আলাদা কারণ TCP আর UDP দুটো আলাদা protocol।"*
 
 **Instructor terminal খুলবে, scan দেবে:**
 
 ```bash
-nmap -p- <VPS_IP> --open -T4
+nmap -p- <VPS_IP> --open -T4 -oX tcp_full.xml
 ```
 
+**Flag গুলো explain করো:**
+
+| Flag | মানে |
+|:---|:---|
+| `-p-` | সব ৬৫৫৩৫টা TCP port scan করো |
+| `--open` | শুধু open port গুলো দেখাও — filtered/closed বাদ |
+| `-T4` | Speed aggressive — lab এ safe, production এ সাবধান |
+| `-oX tcp_full.xml` | Output টা XML format এ save করো (পরে HTML বানাবো) |
+
 **Scan দিয়েই বলো:**
-> *"এই scan টা শেষ হতে ৩-৪ মিনিট লাগবে। nmap একে একে সব ৬৫৫৩৫টা port check করছে। এই সময়টা নষ্ট না — এই ফাঁকে আমরা আরেকটু গভীরে যাবো।"*
+> *"এই scan টা শেষ হতে ৩-৪ মিনিট লাগবে। nmap একে একে সব ৬৫৫৩৫টা TCP port check করছে। `-oX` flag দিয়ে directly XML এ save হচ্ছে — screen এ output দেখার পাশাপাশি file ও তৈরি হচ্ছে।"*
 
 ---
 
-### ⏳ Scan চলার সময় — OSINT Concept
+### ⏳ TCP Scan চলার সময় — OSINT Concept
 
 **Scan চলতে থাকলে বলো:**
 
@@ -211,7 +223,7 @@ Google dorks   → site:nexusglobal.com filetype:pdf
 
 ---
 
-### ✅ Scan Result — Real Output
+### ✅ TCP Scan Result — Real Output
 
 **Scan complete হলে output দেখাবে:**
 
@@ -235,7 +247,168 @@ PORT     STATE SERVICE
 ```
 
 **বলো:**
-> *"দেখো — ১৫টা port open। Port 22 হলো VPS এর নিজের SSH — এটা আমাদের target না, out of scope। বাকি গুলো lab এর services। এখন version fingerprint করবো।"*
+> *"দেখো — ১৫টা TCP port open। `tcp_full.xml` file টাও তৈরি হয়ে গেছে — এটা আমরা পরে HTML এ convert করবো।"*
+
+---
+
+### 📡 Step 2 — UDP Top 1000 Scan
+
+**বলো:**
+> *"TCP scan শেষ। এখন UDP। TCP আর UDP এর পার্থক্যটা বোঝো — TCP connection-based, মানে handshake হয়, তাই port open কিনা clearly বোঝা যায়। UDP connectionless — কোনো handshake নেই। তাই UDP scan অনেক slow এবং 'open|filtered' মানে heuristic guess।*
+>
+> *UDP তে সব ৬৫৫৩৫ port scan করা practically অসম্ভব — ঘণ্টার পর ঘণ্টা লাগতো। তাই আমরা top ১০০০ করি — nmap এর নিজস্ব database থেকে সবচেয়ে commonly used UDP port গুলো।"*
+
+**UDP scan চালাও (root / sudo লাগবে):**
+
+```bash
+sudo nmap -sU --top-ports 1000 <VPS_IP> -T4 -oX udp_top1000.xml
+```
+
+**Flag গুলো explain করো:**
+
+| Flag | মানে |
+|:---|:---|
+| `-sU` | UDP scan mode — TCP scan এর বদলে UDP probe পাঠাবে |
+| `--top-ports 1000` | nmap এর statistics database থেকে সবচেয়ে common ১০০০ UDP port |
+| `sudo` | UDP raw socket পাঠাতে root privilege লাগে |
+| `-oX udp_top1000.xml` | UDP result ও আলাদা XML এ save |
+
+**বলো:**
+> *"এটা TCP scan এর চেয়ে slow হবে — ৫-৮ মিনিট লাগতে পারে। কিন্তু অনেক critical service UDP তে থাকে যেগুলো TCP scan এ দেখাই যায় না।"*
+
+**Key UDP ports explain করো class এ:**
+
+```
+Port 53/udp   → DNS         (কোনো domain resolve করতে)
+Port 67/udp   → DHCP        (IP address দেয়)
+Port 69/udp   → TFTP        (firmware update — often unauth)
+Port 123/udp  → NTP         (time sync)
+Port 161/udp  → SNMP        ← আমাদের lab এ আছে! (monitoring info leak)
+Port 500/udp  → IKE/IPSec   (VPN)
+Port 5060/udp → SIP/VoIP    ← আমাদের lab এ আছে! (phone system)
+```
+
+**Expected UDP Scan Output:**
+
+```
+PORT      STATE         SERVICE
+53/udp    open          domain
+123/udp   open          ntp
+161/udp   open          snmp        ← SNMP! community string 'public' দিয়ে info পাবো
+5060/udp  open|filtered sip         ← VoIP SIP — phone system
+```
+
+**WOW Moment — এখানে pause করো:**
+> *"দেখো — TCP scan এ port 161 দেখাই যায়নি। কারণ SNMP UDP তে চলে। UDP scan না করলে এই service টাই miss হয়ে যেত। আর SNMP থেকে আমরা server এর OS, hostname, network interface — সব পাবো।*
+>
+> *Same ভাবে port 5060 — VoIP phone system। এই port TCP scan এ invisible। তাই দুটো scan-ই দরকার।"*
+
+**MITRE ATT&CK:**
+> `T1595 — Active Scanning`
+> `T1592 — Gather Victim Host Information`
+
+---
+
+### 💾 Step 3 — XML Save করার কারণ এবং HTML Report তৈরি
+
+**বলো:**
+> *"দুটো XML file তৈরি হয়ে গেছে — `tcp_full.xml` আর `udp_top1000.xml`। এখন এই raw XML গুলো একটা সুন্দর, readable HTML report এ convert করবো।*
+>
+> *কেন? কারণ pentest report এ client কে terminal output paste করলে বুঝবে না। একটা সুন্দর HTML table দেখালে সব clearly বোঝা যায়।*
+>
+> *nmap নিজেই একটা XSL stylesheet দেয় — `nmap.xsl`। আর Linux এ `xsltproc` নামে একটা tool আছে যেটা এই XSL দিয়ে XML কে HTML এ রূপান্তর করে।"*
+
+**Tool কীভাবে কাজ করে — diagram দেখাও:**
+
+```
+nmap scan result
+      │
+      ▼
+  tcp_full.xml              ← nmap এর -oX flag দিয়ে তৈরি
+  udp_top1000.xml
+      │
+      │  xsltproc + nmap.xsl (stylesheet)
+      ▼
+  tcp_report.html           ← browser এ খোলা যাবে
+  udp_report.html           ← সুন্দর table, color-coded
+```
+
+**Step 3a — `xsltproc` install আছে কিনা check করো:**
+
+```bash
+which xsltproc
+# /usr/bin/xsltproc  ← থাকলে এই output
+
+# না থাকলে install করো:
+sudo apt install xsltproc -y
+```
+
+**Step 3b — nmap.xsl এর location খুঁজে বের করো:**
+
+```bash
+find / -name "nmap.xsl" 2>/dev/null
+# সাধারণত এখানে থাকে:
+# /usr/share/nmap/nmap.xsl
+```
+
+**Step 3c — TCP report HTML এ convert করো:**
+
+```bash
+xsltproc /usr/share/nmap/nmap.xsl tcp_full.xml -o tcp_report.html
+```
+
+**Step 3d — UDP report HTML এ convert করো:**
+
+```bash
+xsltproc /usr/share/nmap/nmap.xsl udp_top1000.xml -o udp_report.html
+```
+
+**Step 3e — File তৈরি হয়েছে কিনা confirm করো:**
+
+```bash
+ls -lh tcp_report.html udp_report.html
+# -rw-r--r-- 1 user user  18K tcp_report.html
+# -rw-r--r-- 1 user user   9K udp_report.html
+```
+
+**Step 3f — Browser এ দেখাও (WOW Moment):**
+
+```bash
+# Linux এ:
+xdg-open tcp_report.html
+
+# অথবা Python দিয়ে quick serve করো:
+python3 -m http.server 9999
+# তারপর browser এ: http://<VPS_IP>:9999/tcp_report.html
+```
+
+**Students দের দেখাও — browser এ যা দেখা যাবে:**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Nmap Scan Report — <VPS_IP>                            │
+│  Scan started: Tue Sep 02 2026 03:00:00                 │
+├────────┬───────┬──────────┬──────────────────────────── │
+│ Port   │ State │ Service  │ Version                      │
+├────────┼───────┼──────────┼──────────────────────────── │
+│ 21/tcp │ open  │ ftp      │ vsFTPd 3.0.5                │
+│ 23/tcp │ open  │ telnet   │ —                           │
+│ 80/tcp │ open  │ http     │ nginx 1.31.4                │
+│  ...   │  ...  │  ...     │  ...                        │
+└────────┴───────┴──────────┴──────────────────────────── │
+```
+
+**বলো:**
+> *"দেখো — terminal এর raw text আর এই HTML report কত আলাদা। Client কে পাঠালে এই HTML report টাই পাঠাবে — clearly সব দেখা যাচ্ছে, color-coded, sortable table।*
+>
+> *Real pentest এ এই file টাই evidence হিসেবে report এ attach হয়।"*
+
+---
+
+### 🔬 Step 4 — Version Fingerprint
+
+**বলো:**
+> *"Port list পেয়েছি। এখন version fingerprint করবো — কোন port এ কোন software কোন version চলছে।"*
 
 ```bash
 nmap -sV -sC -p 21,23,80,2222,8025,8080,8554,8888,9001,9003 <VPS_IP>
@@ -1250,7 +1423,9 @@ Client কেন gray-box prefer করে?
 | Gray-box Flags | 2 — FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026} + FLAG{CR0WN_J3W3LS...} |
 | Attack Techniques | 12+ |
 | MITRE ATT&CK TTPs | 14 |
-| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, MinIO, RTSP/HLS (CCTV), SNMP |
+| Scan Coverage | TCP all 65535 ports + UDP top 1000 ports |
+| Report Format | nmap XML → xsltproc → HTML (tcp_report.html, udp_report.html) |
+| Services Covered | FTP, Telnet, HTTP, SMB, PostgreSQL, Grafana, MinIO, RTSP/HLS (CCTV), SNMP, SIP/VoIP |
 | Key Teaching Point | Gray-box coverage vs Black-box limitation |
 
 ---
