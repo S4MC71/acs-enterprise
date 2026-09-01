@@ -214,4 +214,4 @@ fi
 
 echo ""
 echo "[*] Starting Samba AD DC..."
-exec samba --foreground --no-process-group --log-stdout
+exec samba --foreground --no-process-group
