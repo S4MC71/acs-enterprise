@@ -209,12 +209,19 @@ services:
     profiles: [core, enterprise]
     restart: unless-stopped
 
-  # Active Directory Domain Controller (Samba)
+  # Active Directory Domain Controller (Samba4 Full AD DC)
+  # Domain: NEXUS | Realm: NEXUS.INTERNAL | IP: 10.0.2.10
+  # Ports: LDAP(389) · Kerberos(88) · DNS(53) · SMB(445) · RPC(135) · GC(3268)
   nexus-ad-dc:
     build: { context: ./config/samba-ad, dockerfile: Dockerfile }
     container_name: nexus-ad-dc
     hostname: dc01
-    cap_add: [NET_ADMIN]
+    domainname: nexus.internal
+    cap_add: [NET_ADMIN, SYS_ADMIN]
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       core_net: { ipv4_address: 10.0.2.10 }
     profiles: [core, enterprise]
