@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     samba-common-bin \
     samba-dsdb-modules \
     samba-vfs-modules \
+    samba-ad-provision \
     winbind \
     libpam-winbind \
     libnss-winbind \
