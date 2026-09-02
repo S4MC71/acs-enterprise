@@ -812,70 +812,87 @@
                     <div id="core-mermaid" class="mermaid">
 
 flowchart TD
-    Internet(("🌐 Internet / WAN"))
+    %% Internet & External Boundary
+    Internet(("🌐 Public Internet & WAN<br/><code>198.51.100.0/24</code>"))
     
-    subgraph Perimeter ["Perimeter / Edge Layer"]
-        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
-        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
-    end
-    
-    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
-        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
-        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
-        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
-        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
-        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
-    end
-    
-    subgraph Core ["Core Backbone (10.0.2.0/24)"]
-        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
-        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
-    end
-    
-    subgraph DC ["Data Center (10.0.3.0/24)"]
-        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
-        ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
-        SAN[("💾 MinIO SAN<br/><code>10.0.3.30 :9001</code>")]
-    end
-    
-    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
-        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20 (tahmed)</code>"]
-        HRPC["💻 HR Workstation<br/><code>10.0.4.10 (sjenkins)</code>"]
+    %% Perimeter / Edge Layer
+    subgraph Edge [🛡️ Perimeter & Edge Layer - 10.0.1.0/24]
+        EdgeRouter["🌐 Edge Router A BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 Multi-Homed</code>"]
+        DMZExposed["⚠️ DMZ Monitor - Black-Box Entry<br/><code>198.51.100.50 / 10.0.1.60</code>"]
     end
 
     Internet <==> EdgeRouter
-    EdgeRouter <--> HQFW
-    
+    Internet -.-> DMZExposed
+    EdgeRouter <==> HQFW
+
+    %% DMZ Layer - Public Facing Services
+    subgraph DMZ [🌐 DMZ Network - 10.0.1.0/24]
+        WAF["🛡️ Nginx WAF Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Corporate Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Corporate Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion Jump Host<br/><code>10.0.1.40 :2222</code>"]
+        WAF <--> WebPortal
+    end
+
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
     HQFW <--> DMZExposed
-    WAF <--> WebPortal
-    
+
+    %% Core Layer - Backbone & Identity
+    subgraph Core [🔑 Core Backbone & Identity - 10.0.2.0/24]
+        ADDC["🔑 Active Directory DC Samba4<br/><code>10.0.2.10 :445/:389</code>"]
+        SIEM["📊 SIEM SOC Syslog Collector<br/><code>10.0.2.99 :514</code>"]
+    end
+
     HQFW <==> ADDC
     HQFW <==> SIEM
-    
-    HQFW <==> ProdDB
+    Bastion -.-> ADDC
+
+    %% Data Center Tier - Database & SAN
+    subgraph DC [🗄️ On-Premises Data Center - 10.0.3.0/24]
+        ERP["⚙️ Internal ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
+        ProdDB[("🗄️ PostgreSQL DB Crown Jewels<br/><code>10.0.3.20 :5432</code>")]
+        SAN[("💾 MinIO SAN Storage<br/><code>10.0.3.30 :9001</code>")]
+        ERP <--> ProdDB
+        ERP <--> SAN
+    end
+
     HQFW <==> ERP
+    HQFW <==> ProdDB
     HQFW <==> SAN
-    
+    ADDC -.-> ProdDB
+
+    %% Campus LAN & Workstations
+    subgraph Campus [💻 Campus LAN & Workstations - 10.0.4.0/24]
+        DevPC["💻 DevOps Workstation - tahmed<br/><code>10.0.4.20</code>"]
+        HRPC["💻 HR Workstation - sjenkins<br/><code>10.0.4.10</code>"]
+    end
+
     HQFW <==> DevPC
     HQFW <==> HRPC
+    DevPC -.-> ERP
+    DevPC -.-> Bastion
+    HRPC -.-> ADDC
 
+    %% Class Definitions
     classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
-    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
-    classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
-    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px;
-    classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px;
-    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
-    
-    class ProdDB,SAN database;
-    class HQFW firewall;
+    classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:3px,color:#fee2e2;
+    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
+    classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef core fill:#581c87,stroke:#c084fc,stroke-width:2px,color:#faf5ff;
+    classDef endpoint fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
+
     class Internet internet;
+    class HQFW firewall;
+    class ProdDB,SAN database;
     class WAF,WebPortal,MailServer web;
     class DMZExposed warning;
-    class Internet internet;
-    class WebPortal,ERP,MailServer web;
+    class ADDC,SIEM core;
+    class DevPC,HRPC endpoint;
 
                     </div>
                 </div>
@@ -887,86 +904,93 @@ flowchart TD
                     <div id="enterprise-mermaid" class="mermaid">
 
 flowchart TD
-    Internet(("🌐 Internet / WAN"))
-    
-    subgraph ISP ["ISPs & DDoS Scrubbing"]
-        ISP1["🌐 ISP 1 Primary<br/><code>198.51.100.0/24</code>"]
-        ISP2["🌐 ISP 2 Secondary<br/><code>203.0.113.0/24</code>"]
-        DDoS["🛡️ DDoS Scrubbing<br/><code>203.0.113.10 :8080</code>"]
-    end
+    %% Internet & Multi-ISP Tier
+    Internet(("🌐 Public Internet & External WAN"))
 
-    subgraph Branch ["Branch Office LAN (10.0.5.0/24)"]
-        SDWANBranch["🔀 Branch SD-WAN<br/><code>10.0.5.1 / 203.0.113.50</code>"]
-        BranchPC["💻 Branch PC<br/><code>10.0.5.10 (ibrahim)</code>"]
-    end
-    
-    subgraph VPN ["VPN Clients (10.0.6.0/24)"]
-        VPNClients["🧑‍💻 Remote VPN Clients<br/><code>10.0.6.0/24 (WireGuard)</code>"]
+    subgraph WANLayer [🌐 Multi-ISP & DDoS Mitigation Tier]
+        DDoS["🛡️ DDoS Scrubbing Center<br/><code>203.0.113.10 :8080</code>"]
+        ISP1["🌐 Primary ISP 1 Uplink<br/><code>198.51.100.0/24 AS65001</code>"]
+        ISP2["🌐 Secondary ISP 2 Uplink<br/><code>203.0.113.0/24 AS65002</code>"]
     end
 
     Internet <==> DDoS
     DDoS <==> ISP1
     DDoS <==> ISP2
-    ISP2 <==> SDWANBranch
-    SDWANBranch --- BranchPC
-    VPNClients -.-> Internet
 
-    subgraph Perimeter ["HQ Perimeter / Edge"]
-        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
-        ISP2Router["🌐 ISP2 BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
-        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
+    %% Remote Workforce & Branch Office
+    subgraph RemoteBranch [🏢 Dhaka Regional Branch Office - 10.0.5.0/24]
+        SDWANBranch["🔀 Branch SD-WAN Edge<br/><code>10.0.5.1 / 203.0.113.50</code>"]
+        BranchPC["💻 Branch Workstation - ibrahim<br/><code>10.0.5.10</code>"]
+        SDWANBranch --- BranchPC
+    end
+
+    subgraph RemoteUsers [🧑‍💻 Remote Workforce - 10.0.6.0/24]
+        VPNClients["🧑‍💻 Remote VPN Users<br/><code>10.0.6.0/24 WireGuard</code>"]
+    end
+
+    ISP2 <==> SDWANBranch
+    Internet -.-> VPNClients
+
+    %% HQ Perimeter & Dual BGP Edge Layer
+    subgraph Perimeter [🛡️ HQ Perimeter & Dual BGP Edge Layer]
+        EdgeRouter["🌐 Primary BGP Edge Router<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        ISP2Router["🌐 Secondary BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
+        HQFW["🔥 Next-Gen Perimeter Firewall<br/><code>10.0.1.254 Multi-Homed</code>"]
+        ZTNA["🚪 ZTNA / WireGuard Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+        DMZExposed["⚠️ DMZ Monitor - Black-Box Entry<br/><code>198.51.100.50 / 10.0.1.60</code>"]
     end
 
     ISP1 <==> EdgeRouter
     ISP2 <==> ISP2Router
-    EdgeRouter <--> HQFW
-    ISP2Router <--> HQFW
+    EdgeRouter <==> HQFW
+    ISP2Router <==> HQFW
+    VPNClients -.-> ZTNA
+    ZTNA <--> HQFW
+    Internet -.-> DMZExposed
 
-    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
-        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
-        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
-        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
-        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
-        ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
-        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
+    %% DMZ Network Layer
+    subgraph DMZ [🌐 DMZ Network - 10.0.1.0/24]
+        WAF["🛡️ Nginx WAF / Reverse Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Corporate Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Corporate Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion Jump Host<br/><code>10.0.1.40 :2222</code>"]
+        WAF <--> WebPortal
     end
 
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
-    HQFW <--> ZTNA
     HQFW <--> DMZExposed
-    WAF <--> WebPortal
-    VPNClients -.-> ZTNA
 
-    subgraph Core ["Core Backbone (10.0.2.0/24)"]
-        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
-        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
-        NAC["🛡️ NAC ISE Server<br/><code>10.0.2.15 :8100</code>"]
-        NMS["📈 NMS Grafana/Prom<br/><code>10.0.2.21 :3000</code>"]
+    %% Core Backbone & Security Management
+    subgraph Core [🔑 Core Backbone & Security Management - 10.0.2.0/24]
+        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10 :445/:389</code>"]
+        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99 :514</code>"]
+        NAC["🛡️ NAC Policy Server Cisco ISE<br/><code>10.0.2.15 :8100</code>"]
+        NMS["📈 NMS Grafana / Prometheus<br/><code>10.0.2.21 :3000</code>"]
     end
 
     HQFW <==> ADDC
     HQFW <==> SIEM
     HQFW <==> NAC
     HQFW <==> NMS
+    Bastion -.-> ADDC
 
-    subgraph DC ["DC Spine-Leaf Fabric (10.0.3.0/24)"]
-        Spine1["🔀 Spine Switch 1<br/><code>10.0.3.241</code>"]
-        Spine2["🔀 Spine Switch 2<br/><code>10.0.3.242</code>"]
-        Leaf1["🔀 Leaf Switch 1 (Compute)<br/><code>10.0.3.243</code>"]
-        Leaf2["🔀 Leaf Switch 2 (Storage)<br/><code>10.0.3.244</code>"]
-        
-        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
+    %% Data Center Spine-Leaf Fabric Layer
+    subgraph DC [🗄️ Data Center Spine-Leaf Fabric - 10.0.3.0/24]
+        Spine1["🔀 DC Spine Switch 1<br/><code>10.0.3.241 / 10.0.2.41</code>"]
+        Spine2["🔀 DC Spine Switch 2<br/><code>10.0.3.242 / 10.0.2.42</code>"]
+        Leaf1["🔀 Leaf 1 Compute ToR<br/><code>10.0.3.243</code>"]
+        Leaf2["🔀 Leaf 2 Storage ToR<br/><code>10.0.3.244</code>"]
+        ProdDB[("🗄️ PostgreSQL DB Crown Jewels<br/><code>10.0.3.20 :5432</code>")]
         ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
         SAN[("💾 MinIO Primary SAN<br/><code>10.0.3.30 :9001</code>")]
-        DRSAN[("💾 MinIO DR SAN<br/><code>10.0.3.35 :9003</code>")]
-        
+        DRSAN[("💾 MinIO DR Backup SAN<br/><code>10.0.3.35 :9003</code>")]
+
         Spine1 === Leaf1
         Spine1 === Leaf2
         Spine2 === Leaf1
         Spine2 === Leaf2
-        
         Leaf1 --- ProdDB
         Leaf1 --- ERP
         Leaf2 --- SAN
@@ -975,13 +999,15 @@ flowchart TD
 
     HQFW <==> Spine1
     HQFW <==> Spine2
+    ADDC -.-> ProdDB
 
-    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
-        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20</code>"]
-        HRPC["💻 HR Workstation<br/><code>10.0.4.10</code>"]
-        VoIP["☎️ VoIP PBX (Asterisk)<br/><code>10.0.4.50 :5060</code>"]
+    %% Campus LAN & Smart Endpoints Layer
+    subgraph Campus [💻 Campus LAN & Smart Endpoints - 10.0.4.0/24]
+        DevPC["💻 DevOps Workstation - tahmed<br/><code>10.0.4.20</code>"]
+        HRPC["💻 HR Workstation - sjenkins<br/><code>10.0.4.10</code>"]
+        VoIP["☎️ VoIP PBX Asterisk<br/><code>10.0.4.50 :5060</code>"]
         IoT["🤖 MQTT IoT Sensor<br/><code>10.0.4.70 :1883</code>"]
-        IPCam["📹 IP Camera (RTSP)<br/><code>10.0.4.60 :8554</code>"]
+        IPCam["📹 IP Camera RTSP CCTV<br/><code>10.0.4.60 :8554</code>"]
     end
 
     HQFW <==> DevPC
@@ -989,19 +1015,28 @@ flowchart TD
     HQFW <==> VoIP
     HQFW <==> IoT
     HQFW <==> IPCam
+    NAC -.-> DevPC
+    NAC -.-> HRPC
 
-    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
-    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
-    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
-    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
-    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
-    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
-    
-    class Internet,ISP1,ISP2,DDoS ext;
-    class HQFW,WAF,ZTNA,SIEM,NAC security;
+    %% Class Definitions
+    classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
+    classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:3px,color:#fee2e2;
+    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
+    classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef core fill:#581c87,stroke:#c084fc,stroke-width:2px,color:#faf5ff;
+    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+    classDef endpoint fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
+
+    class Internet,ISP1,ISP2,DDoS internet;
+    class HQFW,ZTNA,NAC,SIEM firewall;
     class ProdDB,SAN,DRSAN database;
-    class Spine1,Spine2,Leaf1,Leaf2 switch;
+    class WAF,WebPortal,MailServer web;
     class DMZExposed warning;
+    class ADDC,NMS core;
+    class Spine1,Spine2,Leaf1,Leaf2,SDWANBranch switch;
+    class DevPC,HRPC,BranchPC,VPNClients,VoIP,IoT,IPCam endpoint;
 
                     </div>
                 </div>
@@ -1013,101 +1048,109 @@ flowchart TD
                     <div id="all-mermaid" class="mermaid">
 
 flowchart TD
-    Internet(("🌐 Internet / WAN"))
-    
-    subgraph ISP ["ISPs & DDoS Scrubbing"]
-        ISP1["🌐 ISP 1 Primary<br/><code>198.51.100.0/24</code>"]
-        ISP2["🌐 ISP 2 Secondary<br/><code>203.0.113.0/24</code>"]
-        DDoS["🛡️ DDoS Scrubbing<br/><code>203.0.113.10 :8080</code>"]
-    end
+    %% Internet & Multi-ISP Tier
+    Internet(("🌐 Public Internet & External WAN"))
 
-    subgraph Cloud ["Cloud Tier (172.16.0.0/24)"]
-        CloudTGW["☁️ Cloud Transit Gateway<br/><code>172.16.0.1 / 10.0.3.251</code>"]
-        CloudLB["⚖️ Cloud Load Balancer<br/><code>172.16.0.10 (HAProxy)</code>"]
-        CloudApp["🌩️ Cloud Microservice<br/><code>172.16.0.20 :8090</code>"]
-        CloudDB[("☁️ Cloud PostgreSQL RDS<br/><code>172.16.0.30 :5432</code>")]
-        SaaS["🌐 SaaS SSO Portal<br/><code>172.16.0.40 :8443</code>"]
-        
-        CloudTGW --- CloudLB
-        CloudLB --- CloudApp
-        CloudApp --- CloudDB
-    end
-
-    Internet <==> CloudLB
-    Internet <==> SaaS
-    
-    subgraph Branch ["Branch Office LAN (10.0.5.0/24)"]
-        SDWANBranch["🔀 Branch SD-WAN<br/><code>10.0.5.1 / 203.0.113.50</code>"]
-        BranchPC["💻 Branch PC<br/><code>10.0.5.10 (ibrahim)</code>"]
-    end
-    
-    subgraph VPN ["VPN Clients (10.0.6.0/24)"]
-        VPNClients["🧑‍💻 Remote VPN Clients<br/><code>10.0.6.0/24 (WireGuard)</code>"]
+    subgraph WANLayer [🌐 Multi-ISP & DDoS Mitigation Tier]
+        DDoS["🛡️ DDoS Scrubbing Center<br/><code>203.0.113.10 :8080</code>"]
+        ISP1["🌐 Primary ISP 1 Uplink<br/><code>198.51.100.0/24 AS65001</code>"]
+        ISP2["🌐 Secondary ISP 2 Uplink<br/><code>203.0.113.0/24 AS65002</code>"]
     end
 
     Internet <==> DDoS
     DDoS <==> ISP1
     DDoS <==> ISP2
-    ISP2 <==> SDWANBranch
-    SDWANBranch --- BranchPC
-    VPNClients -.-> Internet
 
-    subgraph Perimeter ["HQ Perimeter / Edge"]
-        EdgeRouter["🌐 Edge Router BGP<br/><code>198.51.100.1 / 10.0.1.1</code>"]
-        ISP2Router["🌐 ISP2 BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
-        HQFW["🔥 Next-Gen Firewall<br/><code>10.0.1.254 (Multi-Homed)</code>"]
+    %% Hybrid Cloud Tier (AWS / Azure VPC Peering)
+    subgraph Cloud [☁️ Hybrid Multi-Cloud Tier - AWS/Azure VPC 172.16.0.0/24]
+        CloudTGW["☁️ Cloud Transit Gateway<br/><code>172.16.0.1 / 10.0.3.251</code>"]
+        CloudLB["⚖️ Cloud Load Balancer ALB<br/><code>172.16.0.10 HAProxy</code>"]
+        CloudApp["🌩️ Cloud Microservice API<br/><code>172.16.0.20 :8090</code>"]
+        CloudDB[("☁️ Cloud RDS PostgreSQL<br/><code>172.16.0.30 :5432</code>")]
+        SaaS["🌐 SaaS SSO Identity Portal<br/><code>172.16.0.40 :8443</code>"]
+
+        CloudLB --- CloudApp
+        CloudApp --- CloudDB
+        CloudTGW --- CloudLB
+    end
+
+    Internet <==> CloudLB
+    Internet <==> SaaS
+
+    %% Remote Branches & Workers
+    subgraph RemoteBranch [🏢 Dhaka Regional Branch Office - 10.0.5.0/24]
+        SDWANBranch["🔀 Branch SD-WAN Edge<br/><code>10.0.5.1 / 203.0.113.50</code>"]
+        BranchPC["💻 Branch Workstation - ibrahim<br/><code>10.0.5.10</code>"]
+        SDWANBranch --- BranchPC
+    end
+
+    subgraph RemoteUsers [🧑‍💻 Remote Workforce - 10.0.6.0/24]
+        VPNClients["🧑‍💻 Remote VPN Users<br/><code>10.0.6.0/24 WireGuard</code>"]
+    end
+
+    ISP2 <==> SDWANBranch
+    Internet -.-> VPNClients
+
+    %% HQ Perimeter & Dual BGP Edge Layer
+    subgraph Perimeter [🛡️ HQ Perimeter & Dual BGP Edge Layer]
+        EdgeRouter["🌐 Primary BGP Edge Router<br/><code>198.51.100.1 / 10.0.1.1</code>"]
+        ISP2Router["🌐 Secondary BGP Router<br/><code>203.0.113.1 / 10.0.1.2</code>"]
+        HQFW["🔥 Next-Gen Perimeter Firewall<br/><code>10.0.1.254 Multi-Homed</code>"]
+        ZTNA["🚪 ZTNA / WireGuard Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
+        DMZExposed["⚠️ DMZ Monitor - Black-Box Entry<br/><code>198.51.100.50 / 10.0.1.60</code>"]
     end
 
     ISP1 <==> EdgeRouter
     ISP2 <==> ISP2Router
-    EdgeRouter <--> HQFW
-    ISP2Router <--> HQFW
+    EdgeRouter <==> HQFW
+    ISP2Router <==> HQFW
+    VPNClients -.-> ZTNA
+    ZTNA <--> HQFW
+    Internet -.-> DMZExposed
 
-    subgraph DMZ ["DMZ Network (10.0.1.0/24)"]
-        WAF["🛡️ WAF Proxy<br/><code>10.0.1.10 :80</code>"]
-        WebPortal["🖥️ Web Portal<br/><code>10.0.1.20 :5000</code>"]
-        MailServer["📧 Mail Server<br/><code>10.0.1.30 :8025</code>"]
-        Bastion["🔐 SSH Bastion<br/><code>10.0.1.40 :2222</code>"]
-        ZTNA["🚪 ZTNA VPN Gateway<br/><code>10.0.1.50 / 10.0.6.1</code>"]
-        DMZExposed["⚠️ DMZ Monitor<br/><code>10.0.1.60 FTP·Telnet·SNMP·PgSQL</code>"]
+    %% DMZ Network Layer
+    subgraph DMZ [🌐 DMZ Network - 10.0.1.0/24]
+        WAF["🛡️ Nginx WAF / Reverse Proxy<br/><code>10.0.1.10 :80</code>"]
+        WebPortal["🖥️ Corporate Web Portal<br/><code>10.0.1.20 :5000</code>"]
+        MailServer["📧 Corporate Mail Server<br/><code>10.0.1.30 :8025</code>"]
+        Bastion["🔐 SSH Bastion Jump Host<br/><code>10.0.1.40 :2222</code>"]
+        WAF <--> WebPortal
     end
 
     HQFW <--> WAF
     HQFW <--> MailServer
     HQFW <--> Bastion
-    HQFW <--> ZTNA
     HQFW <--> DMZExposed
-    WAF <--> WebPortal
-    VPNClients -.-> ZTNA
 
-    subgraph Core ["Core Backbone (10.0.2.0/24)"]
-        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10</code>"]
-        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99</code>"]
-        NAC["🛡️ NAC ISE Server<br/><code>10.0.2.15 :8100</code>"]
-        NMS["📈 NMS Grafana/Prom<br/><code>10.0.2.21 :3000</code>"]
+    %% Core Layer & Security Management
+    subgraph Core [🔑 Core Backbone & Security Management - 10.0.2.0/24]
+        ADDC["🔑 Active Directory DC<br/><code>10.0.2.10 :445/:389</code>"]
+        SIEM["📊 SIEM SOC Collector<br/><code>10.0.2.99 :514</code>"]
+        NAC["🛡️ NAC Policy Server Cisco ISE<br/><code>10.0.2.15 :8100</code>"]
+        NMS["📈 NMS Grafana / Prometheus<br/><code>10.0.2.21 :3000</code>"]
     end
 
     HQFW <==> ADDC
     HQFW <==> SIEM
     HQFW <==> NAC
     HQFW <==> NMS
+    Bastion -.-> ADDC
 
-    subgraph DC ["DC Spine-Leaf Fabric (10.0.3.0/24)"]
-        Spine1["🔀 Spine Switch 1<br/><code>10.0.3.241</code>"]
-        Spine2["🔀 Spine Switch 2<br/><code>10.0.3.242</code>"]
-        Leaf1["🔀 Leaf Switch 1 (Compute)<br/><code>10.0.3.243</code>"]
-        Leaf2["🔀 Leaf Switch 2 (Storage)<br/><code>10.0.3.244</code>"]
-        
-        ProdDB[("🗄️ PostgreSQL DB<br/><code>10.0.3.20 :5432</code>")]
+    %% Data Center Spine-Leaf Fabric
+    subgraph DC [🗄️ Data Center Spine-Leaf Fabric - 10.0.3.0/24]
+        Spine1["🔀 DC Spine Switch 1<br/><code>10.0.3.241 / 10.0.2.41</code>"]
+        Spine2["🔀 DC Spine Switch 2<br/><code>10.0.3.242 / 10.0.2.42</code>"]
+        Leaf1["🔀 Leaf 1 Compute ToR<br/><code>10.0.3.243</code>"]
+        Leaf2["🔀 Leaf 2 Storage ToR<br/><code>10.0.3.244</code>"]
+        ProdDB[("🗄️ PostgreSQL DB Crown Jewels<br/><code>10.0.3.20 :5432</code>")]
         ERP["⚙️ ERP Intranet<br/><code>10.0.3.10 :8000</code>"]
         SAN[("💾 MinIO Primary SAN<br/><code>10.0.3.30 :9001</code>")]
-        DRSAN[("💾 MinIO DR SAN<br/><code>10.0.3.35 :9003</code>")]
-        
+        DRSAN[("💾 MinIO DR Backup SAN<br/><code>10.0.3.35 :9003</code>")]
+
         Spine1 === Leaf1
         Spine1 === Leaf2
         Spine2 === Leaf1
         Spine2 === Leaf2
-        
         Leaf1 --- ProdDB
         Leaf1 --- ERP
         Leaf2 --- SAN
@@ -1116,16 +1159,19 @@ flowchart TD
 
     HQFW <==> Spine1
     HQFW <==> Spine2
-    
+    ADDC -.-> ProdDB
+
+    %% Cloud Direct Connect / Transit Peering
     CloudTGW <==> Spine1
     CloudTGW <==> Spine2
 
-    subgraph Campus ["Campus LAN (10.0.4.0/24)"]
-        DevPC["💻 DevOps Workstation<br/><code>10.0.4.20</code>"]
-        HRPC["💻 HR Workstation<br/><code>10.0.4.10</code>"]
-        VoIP["☎️ VoIP PBX (Asterisk)<br/><code>10.0.4.50 :5060</code>"]
+    %% Campus LAN & Smart Endpoints Layer
+    subgraph Campus [💻 Campus LAN & Smart Endpoints - 10.0.4.0/24]
+        DevPC["💻 DevOps Workstation - tahmed<br/><code>10.0.4.20</code>"]
+        HRPC["💻 HR Workstation - sjenkins<br/><code>10.0.4.10</code>"]
+        VoIP["☎️ VoIP PBX Asterisk<br/><code>10.0.4.50 :5060</code>"]
         IoT["🤖 MQTT IoT Sensor<br/><code>10.0.4.70 :1883</code>"]
-        IPCam["📹 IP Camera (RTSP)<br/><code>10.0.4.60 :8554</code>"]
+        IPCam["📹 IP Camera RTSP CCTV<br/><code>10.0.4.60 :8554</code>"]
     end
 
     HQFW <==> DevPC
@@ -1133,21 +1179,30 @@ flowchart TD
     HQFW <==> VoIP
     HQFW <==> IoT
     HQFW <==> IPCam
+    NAC -.-> DevPC
+    NAC -.-> HRPC
 
-    classDef default fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
-    classDef ext fill:#064e3b,stroke:#10b981,stroke-width:2px;
-    classDef security fill:#7f1d1d,stroke:#ef4444,stroke-width:2px;
-    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px;
-    classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px;
-    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px;
-    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px;
-    
-    class Internet,ISP1,ISP2,DDoS ext;
-    class HQFW,WAF,ZTNA,SIEM,NAC security;
-    class ProdDB,SAN,DRSAN,CloudDB database;
-    class CloudTGW,CloudLB,CloudApp,SaaS cloud;
-    class Spine1,Spine2,Leaf1,Leaf2 switch;
+    %% Class Definitions
+    classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc,rx:8px,ry:8px;
+    classDef firewall fill:#7f1d1d,stroke:#ef4444,stroke-width:3px,color:#fee2e2;
+    classDef internet fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef database fill:#312e81,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
+    classDef cloud fill:#075985,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
+    classDef web fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1;
+    classDef warning fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef core fill:#581c87,stroke:#c084fc,stroke-width:2px,color:#faf5ff;
+    classDef switch fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+    classDef endpoint fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f0f9ff;
+
+    class Internet,ISP1,ISP2,DDoS internet;
+    class HQFW,ZTNA,NAC,SIEM firewall;
+    class ProdDB,SAN,DRSAN database;
+    class CloudTGW,CloudLB,CloudApp,CloudDB,SaaS cloud;
+    class WAF,WebPortal,MailServer web;
     class DMZExposed warning;
+    class ADDC,NMS core;
+    class Spine1,Spine2,Leaf1,Leaf2,SDWANBranch switch;
+    class DevPC,HRPC,BranchPC,VPNClients,VoIP,IoT,IPCam endpoint;
 
                     </div>
                 </div>
@@ -1259,6 +1314,16 @@ flowchart TD
         mermaid.initialize({
             startOnLoad: false,
             securityLevel: 'loose',
+            theme: 'base',
+            themeVariables: { 
+                fontFamily: 'Inter', 
+                primaryColor: '#1e293b', 
+                primaryTextColor: '#f8fafc', 
+                primaryBorderColor: '#3b82f6', 
+                lineColor: '#64748b', 
+                clusterBkg: 'rgba(15, 23, 42, 0.65)',
+                clusterBorder: '#334155'
+            },
             flowchart: {
                 useMaxWidth: false,
                 htmlLabels: true,
@@ -1636,17 +1701,19 @@ flowchart TD
 
         // Render all Mermaid diagrams explicitly on page load
         window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await mermaid.run({
-                    nodes: document.querySelectorAll('.mermaid')
-                });
-                setTimeout(() => {
-                    fitToScreen();
-                    attachNodeClickHandlers();
-                }, 300);
-            } catch (err) {
-                console.error("Mermaid run error:", err);
+            const mermaidDivs = document.querySelectorAll('.mermaid');
+            for (const el of mermaidDivs) {
+                try {
+                    console.log("Rendering mermaid element:", el.id);
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.error("Mermaid run error on " + el.id + ":", err.message || err.str || err.hash || JSON.stringify(err), err);
+                }
             }
+            setTimeout(() => {
+                fitToScreen();
+                attachNodeClickHandlers();
+            }, 300);
         });
     </script>
 </body>
