@@ -1,4 +1,4 @@
-﻿# 🏢 Enterprise Network Penetration Testing — Class Module
+# 🏢 Enterprise Network Penetration Testing — Class Module
 ### *"From Zero Knowledge to Full Compromise — Black-box to Gray-box"*
 
 > **Instructor:** [নাম]
@@ -431,6 +431,9 @@ http://<VPS_IP>:9001 → Login required
    Grafana:   10.0.2.21:3000
 ```
 
+> **Gray-box এ প্রতিটা Exclusive = একটা specific vulnerability demonstrate করে।**
+> Credential শুধু starting point — এরপর প্রতিটা step এ নতুন misconfiguration expose হয়।
+
 ---
 
 ### 🔍 Internal Network Discovery
@@ -492,6 +495,9 @@ cat ~/.pgpass 2>/dev/null
 
 **MITRE:** `T1552.003` `T1552.004`
 
+> ⚠️ **Vulnerability:** Credentials plaintext এ bash_history + env vars এ stored
+> 🔧 **Fix:** Secrets manager use করো (HashiCorp Vault / AWS Secrets), bash_history clear করো, workstation access restrict করো
+
 ---
 
 ### 💎 Exclusive #2 — SMB Share Credential Leak
@@ -521,6 +527,9 @@ SAN_PASS="SuperS3cUr3_B4ckup_Vault_Pass_2026!"  # ← MinIO!
 > *"RESTRICTED লেখা — anonymous access — plaintext passwords।"*
 
 **MITRE:** `T1039` `T1552.001`
+
+> ⚠️ **Vulnerability:** RESTRICTED share অথচ anonymous read allowed + credentials plaintext script এ
+> 🔧 **Fix:** সব SMB share এ authentication enforce করো, credentials কখনো script এ রাখবে না
 
 ---
 
@@ -553,6 +562,9 @@ SELECT * FROM payroll LIMIT 3;
 
 **MITRE:** `T1078.002` `T1213`
 
+> ⚠️ **Vulnerability:** DB password script এ + DB সব internal IP থেকে accessible, কোনো IP restriction নেই
+> 🔧 **Fix:** Secrets manager, DB access শুধু application server IP তে restrict, audit logging enable
+
 ---
 
 ### 💎 Exclusive #4 — Web Portal: SQLi + Command Injection
@@ -578,6 +590,9 @@ SELECT * FROM payroll LIMIT 3;
 
 **MITRE:** `T1190` `T1059.004` `T1068`
 
+> ⚠️ **Vulnerability:** SQL + Command injection — কোনো input validation নেই, web server root হিসেবে চলছে
+> 🔧 **Fix:** Parameterized queries, command whitelist/validation, web server non-root user এ চালাও
+
 ---
 
 ### 💎 Exclusive #5 — Grafana
@@ -598,6 +613,9 @@ http://<VPS_IP>:3000
 
 **MITRE:** `T1078.001` `T1518`
 
+> ⚠️ **Vulnerability:** Anonymous access enabled + weak admin credentials + outdated version
+> 🔧 **Fix:** Disable anonymous access, strong password + MFA, update Grafana, restrict to internal network
+
 ---
 
 ### 💎 Exclusive #6 — MinIO Backup Storage
@@ -610,21 +628,45 @@ http://<VPS_IP>:9001
 
 **MITRE:** `T1530`
 
+> ⚠️ **Vulnerability:** Weak credentials + no MFA on backup storage, publicly accessible port
+> 🔧 **Fix:** Strong credentials + MFA, MinIO internal network এ restrict করো, backup encrypt করো
+
 ---
 
-# 🔥 PHASE 5 — CTF / Classwork (30 min)
+# 🔥 PHASE 5 — Student Tasks + CTF (30 min)
+
+### 🖥️ Black-box Tasks — নিজে করো
+
+| # | Task | Tool |
+|:---|:---|:---|
+| 1 | VPS এর সব open TCP port খুঁজো | `nmap -p-` |
+| 2 | FTP anonymous login → sensitive files download করো | `ftp` |
+| 3 | SNMP walk → OS + hostname + interfaces বের করো | `snmpwalk -v2c -c public` |
+| 4 | Web robots.txt → hidden paths + internal IP বের করো | `curl` |
+
+### 🔴 Gray-box Tasks — credentials দিয়ে
+
+| # | Task | Tool |
+|:---|:---|:---|
+| 5 | Bastion SSH → `ip route` → কোন networks? | `ssh -p 2222` |
+| 6 | Core + DC network ping sweep → সব hosts | `for+ping` |
+| 7 | tahmed workstation → bash_history check করো | `docker exec` |
+| 8 | SMB IT-Backups → sync_prod_db.sh download করো | `smbclient` |
+
+### 🚩 FLAG Challenges
+
+| Flag | Task | Hint |
+|:---|:---|:---|
+| 🚩 FLAG 1 — Easy | Portal Tracking ID → SQLi → employees dump | `' UNION SELECT ...` |
+| 🚩 FLAG 2 — Medium | Portal Ping Tool → Command Injection → `/etc/passwd` | `8.8.8.8; cat /etc/passwd` |
+| 🚩 FLAG 3 — Hard | SMB creds → PostgreSQL → `system_vault_keys` | `smbclient //[IP]/IT-Backups` |
+
+### 💬 Discussion (প্রতিটা task এর পর)
 
 ```
-FLAG 1 (Easy)   → http://[IP]/?track_id=
-                  SQLi → employees table
-                  Hint: UNION based
-
-FLAG 2 (Medium) → http://[IP]/admin/server-check
-                  CMDi → /etc/passwd
-                  Hint: semicolon injection
-
-FLAG 3 (Hard)   → SMB → DB creds → system_vault_keys
-                  Hint: smbclient //[IP]/IT-Backups
+→ এই vulnerability কীভাবে real company তে হয়?
+→ এটা black-box এ পাওয়া সম্ভব ছিল?
+→ Fix কী হবে?
 ```
 
 ---
